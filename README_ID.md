@@ -6,53 +6,53 @@
   <img src="https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-lightgrey" alt="Platform">
 </p>
 
-CLI tool for managing domain/port forwarding in Virtualizor VPS environments with multi-host support and Rich TUI.
+CLI tool untuk mengelola domain/port forwarding di lingkungan VPS Virtualizor dengan dukungan multi-host dan Rich TUI.
 
-**[🇮🇩 Baca dalam Bahasa Indonesia](README_ID.md)**
+**[🇬🇧 Read in English](README.md)**
 
-## Table of Contents
+## 📋 Daftar Isi
 
-- [Features](#-features)
-- [Requirements](#-requirements)
-- [Installation](#-installation)
+- [Fitur](#-fitur)
+- [Persyaratan](#-persyaratan)
+- [Instalasi](#-instalasi)
 - [Quick Start](#-quick-start)
-- [Usage](#-usage)
-- [Configuration File](#-configuration-file)
-- [Commands Reference](#-commands-reference)
-- [Examples](#-examples)
+- [Penggunaan](#-penggunaan)
+- [File Konfigurasi](#-file-konfigurasi)
+- [Referensi Command](#-referensi-command)
+- [Contoh](#-contoh)
 - [Troubleshooting](#-troubleshooting)
 - [Development](#-development)
-- [Contributing](#-contributing)
-- [License](#-license)
+- [Kontribusi](#-kontribusi)
+- [Lisensi](#-lisensi)
 
-## Features
+## ✨ Fitur
 
-| Feature | Description |
-|---------|-------------|
-| **Multi-Host Support** | Manage multiple Virtualizor servers from a single interface |
-| **Rich TUI** | Informative terminal output with tables, panels, and progress bars |
-| **CRUD Operations** | Easily add, edit, and delete forwarding rules |
-| **Batch Operations** | Import/export rules in JSON format |
-| **Securep Config** | Passwords stored with base64 encoding |
-| **Paython 3.8-3.13** | Compatible with various Python versions |
-| **Interactive Mode** | Step-by-step mode for beginners |
-| **JSON Output** | Export data in JSON format for scripting |
+| Fitur | Deskripsi |
+|-------|-----------|
+| **Multi-Host Support** | Kelola beberapa server Virtualizor dari satu interface |
+| **Rich TUI** | Output terminal yang informatif dengan tabel, panel, dan progress bar |
+| **CRUD Operations** | Add, edit, delete forwarding rules dengan mudah |
+| **Batch Operations** | Import/export rules dalam format JSON |
+| **Secure Config** | Password tersimpan dengan encoding base64 |
+| **Python 3.8-3.13** | Kompatibel dengan berbagai versi Python |
+| **Interactive Mode** | Mode step-by-step untuk pemula |
+| **JSON Output** | Export data dalam format JSON untuk scripting |
 
-## Requiremtents
+## Persyaratan
 
-- Python 3.8 or newer
-- Access to Virtualizor Panel with API credentials
-- Network access to Virtualizor server
+- Python 3.8 atau lebih baru
+- Akses ke Virtualizor Panel dengan API credentials
+- Network access ke server Virtualizor
 
-## Installation
+## Instalasi
 
-### From PyPI (Recommended)
+### Dari PyPI (Recommended)
 
 ```bash
 pip install vf-forwarding
 ```
 
-### From Source
+### Dari Source
 
 ```bash
 git clone https://github.com/iam-rizz/python-domain-forwarding-virtualizor.git
@@ -60,120 +60,118 @@ cd python-domain-forwarding-virtualizor
 pip install -e .
 ```
 
-### Verify Installation
+### Verifikasi Instalasi
 
 ```bash
 vf --help
 ```
 
-> **Note:** Dependencies (`requests`, `rich`) will be automatically installed.
+> **Note:** Dependencies (`requests`, `rich`) akan otomatis terinstall.
 
 ## Quick Start
 
 ```bash
-# 1. Add host configuration
+# 1. Tambah host configuration
 vf config add production \
   --url "https://panel.example.com:4083/index.php" \
   --key "YOUR_API_KEY" \
   --pass "YOUR_API_PASSWORD" \
   --default
 
-# 2. Test connection
+# 2. Test koneksi
 vf config test
 
-# 3. List VMs
+# 3. Lihat daftar VM
 vf vm list
 
-# 4. Add forwarding rule (interactive)
+# 4. Tambah forwarding rule (interactive)
 vf forward add -i
 ```
 
 
-## Usage
+## Penggunaan
 
-### 1. Configuration
+##igurasi
 
-#### Add Host Profile
+#### Tambah Host Profile
 
 ```bash
 # Basic
 vf config add myhost --url "https://panel.com:4083/index.php" --key "apikey" --pass "password"
 
-# Set as default
-vf config add myhost --url "https://panel.com:4083/index.php" --key "apikey" --pass "password" --default
+# Dengan set sebagai default
+vf config add myhost --url "https:index.php" --key "apikey" --pass "password" --default
 ```
 
-#### Manage Host Profiles
+#### Kelola Host Profiles
 
 ```bash
-# List all hosts
+# Lihat semua host
 vf config list
 
 # Set default host
 vf config set-default production
 
-# Test connection
-vf config test              # Test default host
-vf config test staging      # Test specific host
+# Test koneksi
+vf config test              # Test default host config test staging      # Test specific host
 
-# Remove host
+# Hapus host
 vf config remove staging
 ```
 
-#### Use Specific Host
+#### Gunakan Host Tertentu
 
 ```bash
-# Use --host or -H for operations with specific host
-vf --host staging vm list
+# Gunakan --host atau -H untuk operasi dengan host tertentu
+vf --host stagin
 vf -H production forward list --vpsid 103
 ```
 
 ### 2. Virtual Machines
 
 ```bash
-# List all VMs
+# Lihat semua VM
 vf vm list
 
-# Filter by status
-vf vm list --status up      # Only running VMs
-vf vm list --status down    # Only stopped VMs
+# Filter berdasarkan status
+vf vm list --status up      # Hanya VM yang running
+vf vm list --status down    # Hanya VM yang stopped
 
-# List VMs from all hosts
+# Lihat VM dari semua host
 vf vm list --all-hosts
 
-# JSON output (for scripting)
+# Output JSON (untuk scripting)
 vf vm list --json
 vf vm list --status up --json
 ```
 
 ### 3. Port Forwarding
 
-#### List Forwarding Rules
+#### Lihat Forwarding Rules
 
 ```bash
-# Interactive (select VM from list)
+# Interactive (pilih VM dari list)
 vf forward list
 
-# Direct to specific VM
+# Langsung ke VM tertentu
 vf forward list --vpsid 103
 vf forward list -v 103
 
-# Auto-select if only 1 VM
+# Auto-select jika hanya 1 VM
 vf forward list --auto
 
-# JSON output
-vf forward list --vpsid 103 --json
+# Output JSONforward list --vpsid 103 --json
 ```
 
-#### Add Forwarding Rule
+#### Tambah Forwarding Rule
 
 ```bash
-# Interactive mode (recommended for beginners)
+# Mode Interactive (recommended untuk pemula)
 vf forward add -i
 vf forward add --interactive
 
 # HTTP Forwarding (auto port 80)
-vf forward add --vpsid 103 --protocol HTTP --domain app.example.com
+vf forward add --vpsid 103 --protocol HTTP --domain appom
 
 # HTTPS Forwarding (auto port 443)
 vf forward add --vpsid 103 --protocol HTTPS --domain secure.example.com
@@ -194,7 +192,7 @@ vf forward add -v 103 -p TCP -d 45.158.126.130 -s 2222 -t 22
 #### Edit Forwarding Rule
 
 ```bash
-# Interactive mode
+# Mode Interactive
 vf forward edit -i
 
 # Edit protocol (auto-update ports)
@@ -210,19 +208,19 @@ vf forward edit --vpsid 103 --vdfid 596 --src-port 8080 --dest-port 80
 vf forward edit -v 103 -f 596 -p HTTPS -d new.example.com
 ```
 
-#### Delete Forwarding Rule
+#### Hapus Forwarding Rule
 
 ```bash
-# Interactive mode (with confirmation)
+# Mode Interactive (dengan konfirmasi)
 vf forward delete -i
 
-# Delete single rule (with confirmation)
+# Hapus single rule (dengan konfirmasi)
 vf forward delete --vpsid 103 --vdfid 596
 
-# Delete multiple rules
+# Hapus multiple rules
 vf forward delete --vpsid 103 --vdfid 596,597,598
 
-# Delete without confirmation
+# Hapus tanpa konfirmasi
 vf forward delete --vpsid 103 --vdfid 596 --force
 
 # Short options
@@ -230,12 +228,12 @@ vf forward delete -v 103 -f 596
 vf forward delete -v 103 -f 596,597 --force
 ```
 
-### 4. Batch Operations
+Batch Operations
 
 #### Export Rules
 
 ```bash
-# Export to JSON file
+# Export ke file JSON
 vf batch export --vpsid 103 --to-file rules.json
 vf batch export -v 103 -o backup.json
 ```
@@ -243,10 +241,9 @@ vf batch export -v 103 -o backup.json
 #### Import Rules
 
 ```bash
-# Import from JSON file
+# Import dari file JSON
 vf batch import --vpsid 103 --from-file rules.json
-
-# Dry run (validate without executing)
+Dry run (validasi tanpa execute)
 vf batch import --vpsid 103 --from-file rules.json --dry-run
 
 # Short options
@@ -254,9 +251,9 @@ vf batch import -v 103 -f rules.json
 vf batch import -v 103 -f rules.json --dry-run
 ```
 
-## Configuration File
+## File Konfigurasi
 
-Config file is stored at `~/.config/virtualizor-forwarding/config.json`:
+Config file disimpan di `~/.config/virtualizor-forwarding/config.json`:
 
 ```json
 {
@@ -279,12 +276,12 @@ Config file is stored at `~/.config/virtualizor-forwarding/config.json`:
 }
 ```
 
-### Batch Import/Export Format
+### Format Batch Import/Export
 
 ```json
 {
   "vpsid": "103",
-  "rules": [
+  "rul": [
     {
       "protocol": "HTTP",
       "src_hostname": "app1.example.com",
@@ -296,7 +293,7 @@ Config file is stored at `~/.config/virtualizor-forwarding/config.json`:
       "protocol": "HTTPS",
       "src_hostname": "app2.example.com",
       "src_port": 443,
-      "dest_ip": "10.0.0.1",
+      "dest_ip".0.1",
       "dest_port": 443
     },
     {
@@ -311,54 +308,55 @@ Config file is stored at `~/.config/virtualizor-forwarding/config.json`:
 ```
 
 
-## Commands Reference
+## Referensi Command
 
 ### Global Options
 
-| Option | Short | Description |
-|--------|-------|-------------|
-| `--host NAME` | `-H` | Use specific host profile |
-| `--no-color` | | Disable colored output |
-| `--verbose` | `-v` | Verbose output |
-| `--debug` | | Debug mode (show stack traces) |
-| `--help` | `-h` | Show help |
+| Option | Short | Deskripsi |
+|--------|-------|-----------|
+| `--host NAME` | `-H` | Gunakan host profile tertentu |
+| `--no-color` | | Nonaktifkan output berwarna |
+| `--verbose` | `-v` | Output verbose |
+| `--debug` | | Mode debug (tampilkan stack traces) |
+| `--help` | `-h` | Tampilkan bantuan |
 
 ### Config Commands
 
-| Command | Description |
-|---------|-------------|
-| `vf config add NAME` | Add new host profile |
-| `vf config remove NAME` | Remove host profile |
-| `vf config list` | List all host profiles |
+| Command | Deskripsi |
+|---------|-----------|
+| `vf config add NAME` | Tambah host profile baru |
+| `vf config remove NAME` | Hapus host profile |
+| `vf config list` | Lihat semua host profiles |
 | `vf config set-default NAME` | Set default host |
-| `vf config test [NAME]` | Test connection to host |
+| `vf config test [NAME]` | Test koneksi ke host |
 
 ### VM Commands
 
-| Command | Description |
-|---------|-------------|
-| `vf vm list` | List VMs |
-| `vf vm list --status up/down` | Filter VMs by status |
-| `vf vm list --all-hosts` | List VMs from all hosts |
-| `vf vm list --json` | Output in JSON format |
+| Command | Deskripsi |
+|---------|-----------|
+| `vf vm list` | Lihat daftar VM |
+| `vf vm list --status up/down` | Filter VM berdasarkan status |
+| `vf vm list --all-hosts` | Lihat VM dari semua host |
+| `vf vm list --json` | Output dalam format JSON |
 
 ### Forward Commands
 
-| Command | Description |
-|---------|-------------|
-| `vf forward list` | List forwarding rules |
-| `vf forward add` | Add forwarding rule |
+| Command | Deskripsi |
+|---------|-----------|
+| `vf forward list` | Lihat forwarding rules |
+| `vf forward add` | Tambah forwarding rule |
 | `vf forward edit` | Edit forwarding rule |
-| `vf forward delete` | Delete forwarding rule(s) |
+| `vf forward delete` | Hapus forwarding rule(s) |
 
 ### Batch Commands
 
-| Command | Description |
-|---------|-------------|
-| `vf batch import` | Import rules from JSON file |
-| `vf batch export` | Export rules to JSON file |
+| Command | Deskripsi |
+|---------|-----------|
+| `vf batch import` | Import rules dari JSON file |
+| `vf batch export` | Export rules ke JSON file |
 
-## Examples
+
+## Contoh
 
 ### Workflow: Setup Web Server Forwarding
 
@@ -370,30 +368,30 @@ vf config add myserver \
   --pass "secret" \
   --default
 
-# 2. Check available VMs
+# 2. Cek VM yang tersedia
 vf vm list --status up
 
-# 3. Add HTTP forwarding for website
+# 3. Tambah HTTP forwarding untuk website
 vf forward add -v 103 -p HTTP -d mysite.com
 
-# 4. Add HTTPS forwarding
+# 4. Tambah HTTPS forwarding
 vf forward add -v 103 -p HTTPS -d mysite.com
 
-# 5. Add SSH access via custom port
+# 5. Tambah SSH access via custom port
 vf forward add -v 103 -p TCP -d 45.158.126.130 -s 2222 -t 22
 
-# 6. Verify
+# 6. Verifikasi
 vf forward list -v 103
 ```
 
-### Workflow: Backup and Restore Rules
+### Workflow: Backup dan Restore Rules
 
 ```bash
-# Backup rules from VM
+# Backup rules dari VM
 vf batch export -v 103 -o vm103_backup.json
 
-# Restore to another VM
-vf batch import -v 104 -f vm103_backup.json --dry-run  # Test first
+# Restore ke VM lain
+vf batch import -v 104 -f vm103_backup.json --dry-run  # Test dulu
 vf batch import -v 104 -f vm103_backup.json            # Execute
 ```
 
@@ -404,13 +402,14 @@ vf batch import -v 104 -f vm103_backup.json            # Execute
 vf config add production --url "https://prod.com:4083/index.php" --key "key1" --pass "pass1" --default
 vf config add staging --url "https://staging.com:4083/index.php" --key "key2" --pass "pass2"
 
-# List VMs from all hosts
+# Lihat VM dari semua host
 vf vm list --all-hosts
 
-# Operations on specific host
+# Operasi di host tertentu
 vf -H staging vm list
 vf -H production forward list -v 103
 ```
+
 
 ## 🔧 Troubleshooting
 
@@ -420,10 +419,10 @@ vf -H production forward list -v 103
 ✗ Failed to connect to API
 ```
 
-**Solution:**
-1. Ensure API URL is correct (including port 4083)
-2. Check network connection to server
-3. Make sure firewall is not blocking
+**Solusi:**
+1. Pastikan URL API benar (termasuk port 4083)
+2. Cek koneksi network ke server
+3. Pastikan firewall tidak memblokir
 
 ### Authentication Error
 
@@ -431,10 +430,10 @@ vf -H production forward list -v 103
 ✗ Authentication failed
 ```
 
-**Solution:**
-1. Verify API Key in Virtualizor Panel
-2. Ensure API Password is correct
-3. Check if API access is enabled in panel
+**Solusi:**
+1. Verifikasi API Key di Virtualizor Panel
+2. Pastikan API Password benar
+3. Cek apakah API access diaktifkan di panel
 
 ### Port Already Reserved
 
@@ -442,10 +441,10 @@ vf -H production forward list -v 103
 ✗ Port 8080 is already reserved/in use
 ```
 
-**Solution:**
-1. Use another available port
-2. Check allowed ports in HAProxy config
-3. See suggestions displayed
+**Solusi:**
+1. Gunakan port lain yang tersedia
+2. Cek allowed ports di HAProxy config
+3. Lihat suggestions yang ditampilkan
 
 ### No VMs Found
 
@@ -453,14 +452,14 @@ vf -H production forward list -v 103
 ! No VMs found
 ```
 
-**Solution:**
-1. Ensure host profile is correct
-2. Check if there are VMs in Virtualizor panel
-3. Verify API credentials have access to VMs
+**Solusi:**
+1. Pastikan host profile benar
+2. Cek apakah ada VM di panel Virtualizor
+3. Verifikasi API credentials memiliki akses ke VM
 
 ### Debug Mode
 
-To see error details:
+Untuk melihat detail error:
 
 ```bash
 vf --debug vm list
@@ -468,7 +467,7 @@ vf --debug forward add -i
 ```
 
 
-## Development
+## 🛠️ Development
 
 ### Setup Development Environment
 
@@ -480,10 +479,10 @@ cd python-domain-forwarding-virtualizor
 # Create virtual environment
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
-# or
+# atau
 venv\Scripts\activate     # Windows
 
-# Install with dev dependencies
+# Install dengan dev dependencies
 pip install -e ".[dev]"
 ```
 
@@ -527,19 +526,19 @@ python-domain-forwarding-virtualizor/
 └── .gitignore
 ```
 
-## Contributing
+## Kontribusi
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Kontribusi sangat diterima! Silakan submit Pull Request.
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+1. Fork repository
+2. Buat feature branch (`git checkout -b feature/FiturBaru`)
+3. Commit perubahan (`git commit -m 'Tambah FiturBaru'`)
+4. Push ke branch (`git push origin feature/FiturBaru`)
+5. Buka Pull Request
 
-## License
+## Lisensi
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Project ini dilisensikan di bawah MIT License - lihat file [LICENSE](LICENSE) untuk detail.
 
 ## Author
 
@@ -551,5 +550,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 <p align="center">
-  Made with ❤️ for Virtualizor users
+  Dibuat dengan ❤️ untuk pengguna Virtualizor
 </p>
