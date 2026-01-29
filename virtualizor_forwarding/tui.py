@@ -404,7 +404,7 @@ class TUIRenderer:
             default_host: Name of default host.
         """
         table = Table(
-            title="🔌 Connection Test Results",
+            title="Connection Test Results",
             show_header=True,
             header_style="bold cyan",
             border_style="blue",
