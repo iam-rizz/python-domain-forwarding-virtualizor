@@ -16,19 +16,15 @@ class TestConfigManager:
     """Tests for ConfigManager class."""
 
     @pytest.fixture
-    def temp_config_path(self):
-        """Create temporary config file path."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-            temp_path = f.name
-        yield temp_path
-        # Cleanup
-        if os.path.exists(temp_path):
-            os.unlink(temp_path)
+    def temp_config_dir(self):
+        """Create temporary config directory."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            yield temp_dir
 
     @pytest.fixture
-    def config_manager(self, temp_config_path):
-        """Create ConfigManager with temp path."""
-        return ConfigManager(config_path=temp_config_path)
+    def temp_config_path(self, temp_config_dir):
+        """Create temp config path without creating the file."""
+        return os.path.join(temp_config_dir, "config.json")
 
     def test_init_default_path(self):
         """Test initialization with default path."""
@@ -41,18 +37,15 @@ class TestConfigManager:
         manager = ConfigManager(config_path=temp_config_path)
         assert str(manager.config_path) == temp_config_path
 
-    def test_load_nonexistent_file(self, config_manager):
+    def test_load_nonexistent_file(self, temp_config_path):
         """Test loading when config file doesn't exist."""
-        # Remove the temp file if it exists
-        if config_manager.config_path.exists():
-            os.unlink(config_manager.config_path)
-
-        config = config_manager.load()
+        manager = ConfigManager(config_path=temp_config_path)
+        config = manager.load()
         assert isinstance(config, Config)
         assert config.hosts == {}
         assert config.default_host is None
 
-    def test_load_valid_config(self, config_manager):
+    def test_load_valid_config(self, temp_config_path):
         """Test loading valid config file."""
         # Write valid config
         config_data = {
@@ -67,24 +60,27 @@ class TestConfigManager:
             "default_host": "prod",
             "version": "1.0",
         }
-        with open(config_manager.config_path, "w") as f:
+        with open(temp_config_path, "w") as f:
             json.dump(config_data, f)
 
-        config = config_manager.load()
+        manager = ConfigManager(config_path=temp_config_path)
+        config = manager.load()
         assert "prod" in config.hosts
         assert config.default_host == "prod"
 
-    def test_load_corrupted_config(self, config_manager):
+    def test_load_corrupted_config(self, temp_config_path):
         """Test loading corrupted config file."""
-        with open(config_manager.config_path, "w") as f:
+        with open(temp_config_path, "w") as f:
             f.write("not valid json {{{")
 
+        manager = ConfigManager(config_path=temp_config_path)
         with pytest.raises(ConfigError) as exc_info:
-            config_manager.load()
+            manager.load()
         assert "corrupted" in str(exc_info.value).lower()
 
-    def test_save_config(self, config_manager):
+    def test_save_config(self, temp_config_path):
         """Test saving config."""
+        manager = ConfigManager(config_path=temp_config_path)
         profile = HostProfile(
             name="test",
             api_url="https://example.com:4083/index.php",
@@ -92,66 +88,71 @@ class TestConfigManager:
             api_pass="pass",
         )
         config = Config(hosts={"test": profile}, default_host="test")
-        config_manager.save(config)
+        manager.save(config)
 
         # Verify file was written
-        assert config_manager.config_path.exists()
-        with open(config_manager.config_path) as f:
+        assert os.path.exists(temp_config_path)
+        with open(temp_config_path) as f:
             data = json.load(f)
         assert "test" in data["hosts"]
 
-    def test_add_host(self, config_manager):
+    def test_add_host(self, temp_config_path):
         """Test adding a host."""
+        manager = ConfigManager(config_path=temp_config_path)
         profile = HostProfile.create(
             name="prod",
             api_url="https://example.com:4083/index.php",
             api_key="key",
             api_pass="password",
         )
-        config_manager.add_host("prod", profile)
+        manager.add_host("prod", profile)
 
-        config = config_manager.load()
+        config = manager.load()
         assert "prod" in config.hosts
         # First host should be set as default
         assert config.default_host == "prod"
 
-    def test_add_host_duplicate(self, config_manager):
+    def test_add_host_duplicate(self, temp_config_path):
         """Test adding duplicate host raises error."""
+        manager = ConfigManager(config_path=temp_config_path)
         profile = HostProfile.create(
             name="prod",
             api_url="https://example.com:4083/index.php",
             api_key="key",
             api_pass="password",
         )
-        config_manager.add_host("prod", profile)
+        manager.add_host("prod", profile)
 
         with pytest.raises(ConfigError) as exc_info:
-            config_manager.add_host("prod", profile)
+            manager.add_host("prod", profile)
         assert "already exists" in str(exc_info.value)
 
-    def test_remove_host(self, config_manager):
+    def test_remove_host(self, temp_config_path):
         """Test removing a host."""
+        manager = ConfigManager(config_path=temp_config_path)
         profile = HostProfile.create(
             name="prod",
             api_url="https://example.com:4083/index.php",
             api_key="key",
             api_pass="password",
         )
-        config_manager.add_host("prod", profile)
-        config_manager.remove_host("prod")
+        manager.add_host("prod", profile)
+        manager.remove_host("prod")
 
-        config = config_manager.load()
+        config = manager.load()
         assert "prod" not in config.hosts
 
-    def test_remove_nonexistent_host(self, config_manager):
+    def test_remove_nonexistent_host(self, temp_config_path):
         """Test removing nonexistent host raises error."""
-        config_manager.load()  # Initialize empty config
+        manager = ConfigManager(config_path=temp_config_path)
+        manager.load()  # Initialize empty config
         with pytest.raises(ConfigError) as exc_info:
-            config_manager.remove_host("nonexistent")
+            manager.remove_host("nonexistent")
         assert "does not exist" in str(exc_info.value)
 
-    def test_remove_default_host_updates_default(self, config_manager):
+    def test_remove_default_host_updates_default(self, temp_config_path):
         """Test removing default host updates default to another host."""
+        manager = ConfigManager(config_path=temp_config_path)
         profile1 = HostProfile.create(
             name="prod",
             api_url="https://prod.com:4083/index.php",
@@ -164,37 +165,40 @@ class TestConfigManager:
             api_key="key2",
             api_pass="pass2",
         )
-        config_manager.add_host("prod", profile1)
-        config_manager.add_host("staging", profile2)
-        config_manager.set_default("prod")
+        manager.add_host("prod", profile1)
+        manager.add_host("staging", profile2)
+        manager.set_default("prod")
 
-        config_manager.remove_host("prod")
-        config = config_manager.load()
+        manager.remove_host("prod")
+        config = manager.load()
         assert config.default_host == "staging"
 
-    def test_get_host(self, config_manager):
+    def test_get_host(self, temp_config_path):
         """Test getting a specific host."""
+        manager = ConfigManager(config_path=temp_config_path)
         profile = HostProfile.create(
             name="prod",
             api_url="https://example.com:4083/index.php",
             api_key="key",
             api_pass="password",
         )
-        config_manager.add_host("prod", profile)
+        manager.add_host("prod", profile)
 
-        retrieved = config_manager.get_host("prod")
+        retrieved = manager.get_host("prod")
         assert retrieved.name == "prod"
         assert retrieved.api_url == "https://example.com:4083/index.php"
 
-    def test_get_nonexistent_host(self, config_manager):
+    def test_get_nonexistent_host(self, temp_config_path):
         """Test getting nonexistent host raises error."""
-        config_manager.load()
+        manager = ConfigManager(config_path=temp_config_path)
+        manager.load()
         with pytest.raises(ConfigError) as exc_info:
-            config_manager.get_host("nonexistent")
+            manager.get_host("nonexistent")
         assert "does not exist" in str(exc_info.value)
 
-    def test_list_hosts(self, config_manager):
+    def test_list_hosts(self, temp_config_path):
         """Test listing all hosts."""
+        manager = ConfigManager(config_path=temp_config_path)
         profile1 = HostProfile.create(
             name="prod",
             api_url="https://prod.com:4083/index.php",
@@ -207,16 +211,17 @@ class TestConfigManager:
             api_key="key2",
             api_pass="pass2",
         )
-        config_manager.add_host("prod", profile1)
-        config_manager.add_host("staging", profile2)
+        manager.add_host("prod", profile1)
+        manager.add_host("staging", profile2)
 
-        hosts = config_manager.list_hosts()
+        hosts = manager.list_hosts()
         assert "prod" in hosts
         assert "staging" in hosts
         assert len(hosts) == 2
 
-    def test_set_default(self, config_manager):
+    def test_set_default(self, temp_config_path):
         """Test setting default host."""
+        manager = ConfigManager(config_path=temp_config_path)
         profile1 = HostProfile.create(
             name="prod",
             api_url="https://prod.com:4083/index.php",
@@ -229,56 +234,62 @@ class TestConfigManager:
             api_key="key2",
             api_pass="pass2",
         )
-        config_manager.add_host("prod", profile1)
-        config_manager.add_host("staging", profile2)
+        manager.add_host("prod", profile1)
+        manager.add_host("staging", profile2)
 
-        config_manager.set_default("staging")
-        assert config_manager.get_default_name() == "staging"
+        manager.set_default("staging")
+        assert manager.get_default_name() == "staging"
 
-    def test_set_default_nonexistent(self, config_manager):
+    def test_set_default_nonexistent(self, temp_config_path):
         """Test setting nonexistent host as default raises error."""
-        config_manager.load()
+        manager = ConfigManager(config_path=temp_config_path)
+        manager.load()
         with pytest.raises(ConfigError):
-            config_manager.set_default("nonexistent")
+            manager.set_default("nonexistent")
 
-    def test_get_default(self, config_manager):
+    def test_get_default(self, temp_config_path):
         """Test getting default host profile."""
+        manager = ConfigManager(config_path=temp_config_path)
         profile = HostProfile.create(
             name="prod",
             api_url="https://example.com:4083/index.php",
             api_key="key",
             api_pass="password",
         )
-        config_manager.add_host("prod", profile)
+        manager.add_host("prod", profile)
 
-        default = config_manager.get_default()
+        default = manager.get_default()
         assert default is not None
         assert default.name == "prod"
 
-    def test_get_default_none(self, config_manager):
+    def test_get_default_none(self, temp_config_path):
         """Test getting default when none set."""
-        config_manager.load()
-        default = config_manager.get_default()
+        manager = ConfigManager(config_path=temp_config_path)
+        manager.load()
+        default = manager.get_default()
         assert default is None
 
-    def test_has_hosts_true(self, config_manager):
+    def test_has_hosts_true(self, temp_config_path):
         """Test has_hosts returns True when hosts exist."""
+        manager = ConfigManager(config_path=temp_config_path)
         profile = HostProfile.create(
             name="prod",
             api_url="https://example.com:4083/index.php",
             api_key="key",
             api_pass="password",
         )
-        config_manager.add_host("prod", profile)
-        assert config_manager.has_hosts() is True
+        manager.add_host("prod", profile)
+        assert manager.has_hosts() is True
 
-    def test_has_hosts_false(self, config_manager):
+    def test_has_hosts_false(self, temp_config_path):
         """Test has_hosts returns False when no hosts."""
-        config_manager.load()
-        assert config_manager.has_hosts() is False
+        manager = ConfigManager(config_path=temp_config_path)
+        manager.load()
+        assert manager.has_hosts() is False
 
-    def test_get_all_hosts(self, config_manager):
+    def test_get_all_hosts(self, temp_config_path):
         """Test getting all hosts."""
+        manager = ConfigManager(config_path=temp_config_path)
         profile1 = HostProfile.create(
             name="prod",
             api_url="https://prod.com:4083/index.php",
@@ -291,10 +302,10 @@ class TestConfigManager:
             api_key="key2",
             api_pass="pass2",
         )
-        config_manager.add_host("prod", profile1)
-        config_manager.add_host("staging", profile2)
+        manager.add_host("prod", profile1)
+        manager.add_host("staging", profile2)
 
-        all_hosts = config_manager.get_all_hosts()
+        all_hosts = manager.get_all_hosts()
         assert len(all_hosts) == 2
         assert "prod" in all_hosts
         assert "staging" in all_hosts
