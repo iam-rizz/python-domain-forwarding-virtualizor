@@ -108,7 +108,7 @@ vf forward add -i
  myhost --url "https://panel.com:4083/index.php" --key "apikey" --pass "password"
 
 # Dengan set sebagai default
-vf config add myhost --url "htthttps://panel.com:4083/index.php" --key "apikey" --pass "password" --default
+vf config add myhost --url "https://panel.com:4083/index.php" --key "apikey" --pass "password" --default
 ```
 
 #### Kelola Host Profiles
