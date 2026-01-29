@@ -5,7 +5,7 @@ CLI tool for managing domain/port forwarding in Virtualizor VPS environments
 with multi-host support and Rich TUI.
 """
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __author__ = "Rizky Adhy Pratama"
 __email__ = "rizkyadhypratama@gmail.com"
 
@@ -22,7 +22,7 @@ from .models import (
     BatchResult,
 )
 from .config import ConfigManager
-from .api import VirtualizorClient
+from .api import VirtualizorClient, APIError, APIConnectionError, AuthenticationError
 from .tui import TUIRenderer
 from .cli import CLI, main
 
@@ -44,4 +44,8 @@ __all__ = [
     "TUIRenderer",
     "CLI",
     "main",
+    # Exceptions
+    "APIError",
+    "APIConnectionError",
+    "AuthenticationError",
 ]

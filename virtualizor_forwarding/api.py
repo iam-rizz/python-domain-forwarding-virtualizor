@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Any, Optional
 import requests
-from urllib3.exceptions import InsecureRequestWarning
+import urllib3
 
 from .models import (
     HostProfile,
@@ -18,26 +18,17 @@ from .models import (
     APIResponse,
 )
 
-# Suppress SSL warnings for self-signed certificates
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-
 
 class APIError(Exception):
     """API related errors."""
 
-    pass
 
-
-class ConnectionError(APIError):
+class APIConnectionError(APIError):
     """Connection related errors."""
-
-    pass
 
 
 class AuthenticationError(APIError):
     """Authentication related errors."""
-
-    pass
 
 
 class VirtualizorClient:
@@ -45,17 +36,24 @@ class VirtualizorClient:
 
     DEFAULT_TIMEOUT = 30
 
-    def __init__(self, host_profile: HostProfile) -> None:
+    def __init__(self, host_profile: HostProfile, verify_ssl: bool = False) -> None:
         """
         Initialize client with host profile.
 
         Args:
             host_profile: HostProfile containing API credentials.
+            verify_ssl: Whether to verify SSL certificates. Default False
+                       for self-signed certificates common in Virtualizor panels.
         """
         self._profile = host_profile
         self._base_url = host_profile.api_url
         self._api_key = host_profile.api_key
         self._api_pass = host_profile.get_decoded_pass()
+        self._verify_ssl = verify_ssl
+
+        # Suppress SSL warnings only when verification is disabled
+        if not verify_ssl:
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     def _build_url(self, action: str, **params: Any) -> str:
         """Build API URL with parameters."""
@@ -90,7 +88,7 @@ class VirtualizorClient:
             JSON response as dictionary.
 
         Raises:
-            ConnectionError: If connection fails.
+            APIConnectionError: If connection fails.
             AuthenticationError: If authentication fails.
             APIError: For other API errors.
         """
@@ -102,40 +100,42 @@ class VirtualizorClient:
                     url,
                     data=data,
                     timeout=self.DEFAULT_TIMEOUT,
-                    verify=False,  # Allow self-signed certificates
+                    verify=self._verify_ssl,
                 )
             else:
-                response = requests.get(url, timeout=self.DEFAULT_TIMEOUT, verify=False)
+                response = requests.get(
+                    url, timeout=self.DEFAULT_TIMEOUT, verify=self._verify_ssl
+                )
 
             response.raise_for_status()
             return response.json()
 
-        except requests.exceptions.Timeout:
-            raise ConnectionError(
+        except requests.exceptions.Timeout as exc:
+            raise APIConnectionError(
                 "Connection timeout. Please check:\n"
                 "  - Network connectivity\n"
                 "  - API URL is correct\n"
                 "  - Server is responding"
-            )
-        except requests.exceptions.ConnectionError as e:
-            raise ConnectionError(
+            ) from exc
+        except requests.exceptions.ConnectionError as exc:
+            raise APIConnectionError(
                 f"Failed to connect to API:\n"
                 f"  URL: {self._base_url}\n"
-                f"  Error: {e}\n"
+                f"  Error: {exc}\n"
                 "Please verify the API URL and network connectivity."
-            )
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 401:
+            ) from exc
+        except requests.exceptions.HTTPError as exc:
+            if exc.response is not None and exc.response.status_code == 401:
                 raise AuthenticationError(
                     "Authentication failed. Please verify:\n"
                     "  - API Key is correct\n"
                     "  - API Password is correct"
-                )
-            raise APIError(f"HTTP error: {e}")
-        except requests.exceptions.JSONDecodeError:
-            raise APIError("Invalid JSON response from API")
-        except Exception as e:
-            raise APIError(f"API request failed: {e}")
+                ) from exc
+            raise APIError(f"HTTP error: {exc}") from exc
+        except requests.exceptions.JSONDecodeError as exc:
+            raise APIError("Invalid JSON response from API") from exc
+        except Exception as exc:
+            raise APIError(f"API request failed: {exc}") from exc
 
     def test_connection(self) -> bool:
         """
@@ -145,17 +145,17 @@ class VirtualizorClient:
             True if connection successful.
 
         Raises:
-            ConnectionError: If connection fails.
+            APIConnectionError: If connection fails.
             AuthenticationError: If authentication fails.
         """
         try:
             response = self._request("listvs")
             # Check if we got valid response
             return "vs" in response or "error" not in response
-        except (ConnectionError, AuthenticationError):
+        except (APIConnectionError, AuthenticationError):
             raise
-        except Exception as e:
-            raise ConnectionError(f"Connection test failed: {e}")
+        except Exception as exc:
+            raise APIConnectionError(f"Connection test failed: {exc}") from exc
 
     def list_vms(self) -> List[VMInfo]:
         """
@@ -178,7 +178,7 @@ class VirtualizorClient:
             try:
                 vm = VMInfo.from_api_response(vpsid, vm_data)
                 vms.append(vm)
-            except Exception:
+            except (KeyError, ValueError, TypeError):
                 continue
 
         return vms
@@ -204,7 +204,7 @@ class VirtualizorClient:
             try:
                 rule = ForwardingRule.from_api_response(rule_data)
                 rules.append(rule)
-            except Exception:
+            except (KeyError, ValueError, TypeError):
                 continue
 
         return rules
@@ -306,3 +306,7 @@ class VirtualizorClient:
             if vm.vpsid == str(vpsid):
                 return vm.ipv4
         return None
+
+
+# Backward compatibility alias
+ConnectionError = APIConnectionError
