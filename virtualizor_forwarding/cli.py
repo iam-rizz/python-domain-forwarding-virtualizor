@@ -423,24 +423,54 @@ class CLI:
         import json as json_module
 
         config = self._config_manager.load()
-        all_vms = []
+
+        if not config.hosts:
+            self._tui.print_warning("No hosts configured. Use 'config add' to add one.")
+            return 1
+
+        all_vms_data = []  # For JSON output
+        total_vms = 0
 
         for host_name, profile in config.hosts.items():
-            try:
-                client = VirtualizorClient(profile)
-                vm_manager = VMManager(client)
-                vms = vm_manager.list_all()
+            with self._tui.show_spinner(f"Fetching VMs from '{host_name}'..."):
+                try:
+                    client = VirtualizorClient(profile)
+                    vm_manager = VMManager(client)
+                    vms = vm_manager.list_all()
+                except AuthenticationError:
+                    self._tui.print_error(
+                        f"Authentication failed for '{host_name}'. Skipping..."
+                    )
+                    continue
+                except APIError as e:
+                    self._tui.print_error(f"Failed to fetch from '{host_name}': {e}")
+                    continue
+
+            if args.json:
+                # Collect for JSON output
                 for vm in vms:
                     vm_dict = vm.to_dict()
                     vm_dict["host"] = host_name
-                    all_vms.append(vm_dict)
-            except Exception as e:
-                self._tui.print_warning(f"Failed to fetch from {host_name}: {e}")
+                    all_vms_data.append(vm_dict)
+            else:
+                # Display table per host
+                if vms:
+                    self._tui.render_vm_table(
+                        vms, title=f"VMs on {host_name} ({len(vms)})"
+                    )
+                    print()  # Empty line between hosts
+                else:
+                    self._tui.print_warning(f"No VMs found on '{host_name}'")
+
+            total_vms += len(vms)
 
         if args.json:
-            print(json_module.dumps(all_vms, indent=2))
+            print(json_module.dumps(all_vms_data, indent=2))
         else:
-            self._tui.print_info(f"Total VMs across all hosts: {len(all_vms)}")
+            # Summary
+            self._tui.print_success(
+                f"Total: {total_vms} VM(s) across {len(config.hosts)} host(s)"
+            )
 
         return 0
 
