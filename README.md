@@ -1,6 +1,7 @@
 # Virtualizor Forwarding Tool (vf)
 
 <p align="center">
+  <img src="https://img.shields.io/pypi/v/virtualizor-forwarding.svg" alt="PyPI Version">
   <img src="https://img.shields.io/badge/python-3.8+-blue.svg" alt="Python 3.8+">
   <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT">
   <img src="https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-lightgrey" alt="Platform">
@@ -22,33 +23,34 @@ CLI tool for managing domain/port forwarding in Virtualizor VPS environments wit
 
 ## Table of Contents
 
-- [Features](#-features)
-- [Requirements](#-requirements)
-- [Installation](#-installation)
-- [Quick Start](#-quick-start)
-- [Usage](#-usage)
-- [Configuration File](#-configuration-file)
-- [Commands Reference](#-commands-reference)
-- [Examples](#-examples)
-- [Troubleshooting](#-troubleshooting)
-- [Development](#-development)
-- [Contributing](#-contributing)
-- [License](#-license)
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Usage](#usage)
+- [Configuration File](#configuration-file)
+- [Commands Reference](#commands-reference)
+- [Examples](#examples)
+- [Troubleshooting](#troubleshooting)
+- [Development](#development)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Features
 
 | Feature | Description |
 |---------|-------------|
 | **Multi-Host Support** | Manage multiple Virtualizor servers from a single interface |
-| **Rich TUI** | Informative terminal output with tables, panels, and progress bars |
+| **Rich TUI** | Beautiful terminal output with tables, panels, spinners, and progress bars |
+| **Connection Testing** | Test all hosts at once with API response time display |
 | **CRUD Operations** | Easily add, edit, and delete forwarding rules |
 | **Batch Operations** | Import/export rules in JSON format |
-| **Securep Config** | Passwords stored with base64 encoding |
-| **Paython 3.8-3.13** | Compatible with various Python versions |
+| **Secure Config** | Passwords stored with base64 encoding |
+| **Python 3.8-3.13** | Compatible with various Python versions |
 | **Interactive Mode** | Step-by-step mode for beginners |
 | **JSON Output** | Export data in JSON format for scripting |
 
-## Requiremtents
+## Requirements
 
 - Python 3.8 or newer
 - Access to Virtualizor Panel with API credentials
@@ -59,7 +61,7 @@ CLI tool for managing domain/port forwarding in Virtualizor VPS environments wit
 ### From PyPI (Recommended)
 
 ```bash
-pip install pip install virtualizor-forwarding
+pip install virtualizor-forwarding
 ```
 
 ### From Source
@@ -98,7 +100,6 @@ vf vm list
 vf forward add -i
 ```
 
-
 ## Usage
 
 ### 1. Configuration
@@ -122,9 +123,11 @@ vf config list
 # Set default host
 vf config set-default production
 
-# Test connection
-vf config test              # Test default host
-vf config test staging      # Test specific host
+# Test connection (all hosts)
+vf config test
+
+# Test specific host
+vf config test staging
 
 # Remove host
 vf config remove staging
@@ -148,7 +151,7 @@ vf vm list
 vf vm list --status up      # Only running VMs
 vf vm list --status down    # Only stopped VMs
 
-# List VMs from all hosts
+# List VMs from all hosts (with details per host)
 vf vm list --all-hosts
 
 # JSON output (for scripting)
@@ -320,7 +323,6 @@ Config file is stored at `~/.config/virtualizor-forwarding/config.json`:
 }
 ```
 
-
 ## Commands Reference
 
 ### Global Options
@@ -341,7 +343,7 @@ Config file is stored at `~/.config/virtualizor-forwarding/config.json`:
 | `vf config remove NAME` | Remove host profile |
 | `vf config list` | List all host profiles |
 | `vf config set-default NAME` | Set default host |
-| `vf config test [NAME]` | Test connection to host |
+| `vf config test [NAME]` | Test connection (all hosts if NAME omitted) |
 
 ### VM Commands
 
@@ -349,7 +351,7 @@ Config file is stored at `~/.config/virtualizor-forwarding/config.json`:
 |---------|-------------|
 | `vf vm list` | List VMs |
 | `vf vm list --status up/down` | Filter VMs by status |
-| `vf vm list --all-hosts` | List VMs from all hosts |
+| `vf vm list --all-hosts` | List VMs from all hosts with details |
 | `vf vm list --json` | Output in JSON format |
 
 ### Forward Commands
@@ -414,6 +416,9 @@ vf batch import -v 104 -f vm103_backup.json            # Execute
 vf config add production --url "https://prod.com:4083/index.php" --key "key1" --pass "pass1" --default
 vf config add staging --url "https://staging.com:4083/index.php" --key "key2" --pass "pass2"
 
+# Test all hosts at once
+vf config test
+
 # List VMs from all hosts
 vf vm list --all-hosts
 
@@ -422,7 +427,7 @@ vf -H staging vm list
 vf -H production forward list -v 103
 ```
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Connection Error
 
@@ -476,7 +481,6 @@ To see error details:
 vf --debug vm list
 vf --debug forward add -i
 ```
-
 
 ## Development
 

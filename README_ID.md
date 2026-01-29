@@ -1,6 +1,7 @@
 # Virtualizor Forwarding Tool (vf)
 
 <p align="center">
+  <img src="https://img.shields.io/pypi/v/virtualizor-forwarding.svg" alt="PyPI Version">
   <img src="https://img.shields.io/badge/python-3.8+-blue.svg" alt="Python 3.8+">
   <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT">
   <img src="https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-lightgrey" alt="Platform">
@@ -20,27 +21,28 @@ CLI tool untuk mengelola domain/port forwarding di lingkungan VPS Virtualizor de
 
 **[🇬🇧 Read in English](README.md)**
 
-## 📋 Daftar Isi
+## Daftar Isi
 
-- [Fitur](#-fitur)
-- [Persyaratan](#-persyaratan)
-- [Instalasi](#-instalasi)
-- [Quick Start](#-quick-start)
-- [Penggunaan](#-penggunaan)
-- [File Konfigurasi](#-file-konfigurasi)
-- [Referensi Command](#-referensi-command)
-- [Contoh](#-contoh)
-- [Troubleshooting](#-troubleshooting)
-- [Development](#-development)
-- [Kontribusi](#-kontribusi)
-- [Lisensi](#-lisensi)
+- [Fitur](#fitur)
+- [Persyaratan](#persyaratan)
+- [Instalasi](#instalasi)
+- [Quick Start](#quick-start)
+- [Penggunaan](#penggunaan)
+- [File Konfigurasi](#file-konfigurasi)
+- [Referensi Command](#referensi-command)
+- [Contoh](#contoh)
+- [Troubleshooting](#troubleshooting)
+- [Development](#development)
+- [Kontribusi](#kontribusi)
+- [Lisensi](#lisensi)
 
-## ✨ Fitur
+## Fitur
 
 | Fitur | Deskripsi |
 |-------|-----------|
 | **Multi-Host Support** | Kelola beberapa server Virtualizor dari satu interface |
-| **Rich TUI** | Output terminal yang informatif dengan tabel, panel, dan progress bar |
+| **Rich TUI** | Output terminal yang cantik dengan tabel, panel, spinner, dan progress bar |
+| **Connection Testing** | Test semua host sekaligus dengan tampilan API response time |
 | **CRUD Operations** | Add, edit, delete forwarding rules dengan mudah |
 | **Batch Operations** | Import/export rules dalam format JSON |
 | **Secure Config** | Password tersimpan dengan encoding base64 |
@@ -98,10 +100,9 @@ vf vm list
 vf forward add -i
 ```
 
-
 ## Penggunaan
 
-##igurasi
+### 1. Konfigurasi
 
 #### Tambah Host Profile
 
@@ -122,8 +123,11 @@ vf config list
 # Set default host
 vf config set-default production
 
-# Test koneksi
-vf config test              # Test default host config test staging      # Test specific host
+# Test koneksi (semua host)
+vf config test
+
+# Test host tertentu
+vf config test staging
 
 # Hapus host
 vf config remove staging
@@ -133,7 +137,7 @@ vf config remove staging
 
 ```bash
 # Gunakan --host atau -H untuk operasi dengan host tertentu
-vf --host stagin
+vf --host staging vm list
 vf -H production forward list --vpsid 103
 ```
 
@@ -147,7 +151,7 @@ vf vm list
 vf vm list --status up      # Hanya VM yang running
 vf vm list --status down    # Hanya VM yang stopped
 
-# Lihat VM dari semua host
+# Lihat VM dari semua host (dengan detail per host)
 vf vm list --all-hosts
 
 # Output JSON (untuk scripting)
@@ -170,7 +174,8 @@ vf forward list -v 103
 # Auto-select jika hanya 1 VM
 vf forward list --auto
 
-# Output JSONforward list --vpsid 103 --json
+# Output JSON
+vf forward list --vpsid 103 --json
 ```
 
 #### Tambah Forwarding Rule
@@ -181,7 +186,7 @@ vf forward add -i
 vf forward add --interactive
 
 # HTTP Forwarding (auto port 80)
-vf forward add --vpsid 103 --protocol HTTP --domain appom
+vf forward add --vpsid 103 --protocol HTTP --domain app.example.com
 
 # HTTPS Forwarding (auto port 443)
 vf forward add --vpsid 103 --protocol HTTPS --domain secure.example.com
@@ -238,7 +243,7 @@ vf forward delete -v 103 -f 596
 vf forward delete -v 103 -f 596,597 --force
 ```
 
-Batch Operations
+### 4. Batch Operations
 
 #### Export Rules
 
@@ -253,7 +258,8 @@ vf batch export -v 103 -o backup.json
 ```bash
 # Import dari file JSON
 vf batch import --vpsid 103 --from-file rules.json
-Dry run (validasi tanpa execute)
+
+# Dry run (validasi tanpa execute)
 vf batch import --vpsid 103 --from-file rules.json --dry-run
 
 # Short options
@@ -291,7 +297,7 @@ Config file disimpan di `~/.config/virtualizor-forwarding/config.json`:
 ```json
 {
   "vpsid": "103",
-  "rul": [
+  "rules": [
     {
       "protocol": "HTTP",
       "src_hostname": "app1.example.com",
@@ -303,7 +309,7 @@ Config file disimpan di `~/.config/virtualizor-forwarding/config.json`:
       "protocol": "HTTPS",
       "src_hostname": "app2.example.com",
       "src_port": 443,
-      "dest_ip".0.1",
+      "dest_ip": "10.0.0.1",
       "dest_port": 443
     },
     {
@@ -316,7 +322,6 @@ Config file disimpan di `~/.config/virtualizor-forwarding/config.json`:
   ]
 }
 ```
-
 
 ## Referensi Command
 
@@ -338,7 +343,7 @@ Config file disimpan di `~/.config/virtualizor-forwarding/config.json`:
 | `vf config remove NAME` | Hapus host profile |
 | `vf config list` | Lihat semua host profiles |
 | `vf config set-default NAME` | Set default host |
-| `vf config test [NAME]` | Test koneksi ke host |
+| `vf config test [NAME]` | Test koneksi (semua host jika NAME tidak diisi) |
 
 ### VM Commands
 
@@ -346,7 +351,7 @@ Config file disimpan di `~/.config/virtualizor-forwarding/config.json`:
 |---------|-----------|
 | `vf vm list` | Lihat daftar VM |
 | `vf vm list --status up/down` | Filter VM berdasarkan status |
-| `vf vm list --all-hosts` | Lihat VM dari semua host |
+| `vf vm list --all-hosts` | Lihat VM dari semua host dengan detail |
 | `vf vm list --json` | Output dalam format JSON |
 
 ### Forward Commands
@@ -364,7 +369,6 @@ Config file disimpan di `~/.config/virtualizor-forwarding/config.json`:
 |---------|-----------|
 | `vf batch import` | Import rules dari JSON file |
 | `vf batch export` | Export rules ke JSON file |
-
 
 ## Contoh
 
@@ -412,6 +416,9 @@ vf batch import -v 104 -f vm103_backup.json            # Execute
 vf config add production --url "https://prod.com:4083/index.php" --key "key1" --pass "pass1" --default
 vf config add staging --url "https://staging.com:4083/index.php" --key "key2" --pass "pass2"
 
+# Test semua host sekaligus
+vf config test
+
 # Lihat VM dari semua host
 vf vm list --all-hosts
 
@@ -420,8 +427,7 @@ vf -H staging vm list
 vf -H production forward list -v 103
 ```
 
-
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Connection Error
 
@@ -476,8 +482,7 @@ vf --debug vm list
 vf --debug forward add -i
 ```
 
-
-## 🛠️ Development
+## Development
 
 ### Setup Development Environment
 
