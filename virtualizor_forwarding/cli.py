@@ -351,6 +351,8 @@ class CLI:
 
     def _cmd_config_test_all(self) -> int:
         """Test connection to all configured hosts."""
+        import time
+
         config = self._config_manager.load()
 
         if not config.hosts:
@@ -361,36 +363,40 @@ class CLI:
 
         results = []
         for host_name, profile in config.hosts.items():
+            start_time = time.time()
             try:
                 client = VirtualizorClient(profile)
                 client.test_connection()
-                results.append((host_name, True, None))
-                self._tui.print_success(f"  ✓ {host_name}")
+                elapsed = (time.time() - start_time) * 1000  # ms
+                results.append((host_name, True, None, elapsed))
             except AuthenticationError:
-                results.append((host_name, False, "Authentication failed"))
-                self._tui.print_error(f"  ✗ {host_name} - Authentication failed")
+                elapsed = (time.time() - start_time) * 1000
+                results.append((host_name, False, "Auth failed", elapsed))
             except Exception as e:
-                results.append((host_name, False, str(e)))
-                self._tui.print_error(f"  ✗ {host_name} - {e}")
+                elapsed = (time.time() - start_time) * 1000
+                error_msg = str(e)[:30] + "..." if len(str(e)) > 30 else str(e)
+                results.append((host_name, False, error_msg, elapsed))
+
+        # Render results table
+        self._tui.render_connection_test_table(results, config.default_host)
 
         # Summary
-        success_count = sum(1 for _, success, _ in results if success)
+        success_count = sum(1 for _, success, _, _ in results if success)
         fail_count = len(results) - success_count
 
-        print()  # Empty line before summary
+        print()
         if fail_count == 0:
             self._tui.print_success(
                 f"All {success_count} host(s) connected successfully!"
             )
             return 0
-        elif success_count == 0:
+        if success_count == 0:
             self._tui.print_error(f"All {fail_count} host(s) failed to connect")
             return 1
-        else:
-            self._tui.print_warning(
-                f"Results: {success_count} succeeded, {fail_count} failed"
-            )
-            return 1
+        self._tui.print_warning(
+            f"Results: {success_count} succeeded, {fail_count} failed"
+        )
+        return 1
 
     # VM command handlers
     def _cmd_vm_list(self, args: argparse.Namespace) -> int:

@@ -390,3 +390,57 @@ class TUIRenderer:
         default_str = default.value if default else "TCP"
         result = self.prompt_select("Protocol", choices, default=default_str)
         return Protocol.from_string(result)
+
+    def render_connection_test_table(
+        self,
+        results: List[tuple],
+        default_host: Optional[str] = None,
+    ) -> None:
+        """
+        Render connection test results as Rich table.
+
+        Args:
+            results: List of (host_name, success, error, elapsed_ms) tuples.
+            default_host: Name of default host.
+        """
+        table = Table(
+            title="🔌 Connection Test Results",
+            show_header=True,
+            header_style="bold cyan",
+            border_style="blue",
+        )
+        table.add_column("Status", justify="center", width=8)
+        table.add_column("Host", style="white")
+        table.add_column("Response Time", justify="right")
+        table.add_column("Details", style="dim")
+
+        for host_name, success, error, elapsed in results:
+            # Status icon
+            if success:
+                status = "[green]✓ OK[/green]"
+            else:
+                status = "[red]✗ FAIL[/red]"
+
+            # Host name with default indicator
+            host_display = f"[cyan]{host_name}[/cyan]"
+            if host_name == default_host:
+                host_display += " [yellow]★[/yellow]"
+
+            # Response time with color coding
+            if elapsed < 500:
+                time_color = "green"
+            elif elapsed < 1000:
+                time_color = "yellow"
+            else:
+                time_color = "red"
+            time_display = f"[{time_color}]{elapsed:.0f}ms[/{time_color}]"
+
+            # Details
+            if success:
+                details = "[green]Connected[/green]"
+            else:
+                details = f"[red]{error}[/red]"
+
+            table.add_row(status, host_display, time_display, details)
+
+        self._console.print(table)
