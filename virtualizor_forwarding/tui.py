@@ -411,7 +411,7 @@ class TUIRenderer:
         )
         table.add_column("Status", justify="center", width=8)
         table.add_column("Host", style="white")
-        table.add_column("Response Time", justify="right")
+        table.add_column("API Response", justify="right")
         table.add_column("Details", style="dim")
 
         for host_name, success, error, elapsed in results:
@@ -426,10 +426,10 @@ class TUIRenderer:
             if host_name == default_host:
                 host_display += " [yellow]★[/yellow]"
 
-            # Response time with color coding
-            if elapsed < 500:
+            # Response time with color coding (adjusted for API calls)
+            if elapsed < 1000:
                 time_color = "green"
-            elif elapsed < 1000:
+            elif elapsed < 2000:
                 time_color = "yellow"
             else:
                 time_color = "red"
