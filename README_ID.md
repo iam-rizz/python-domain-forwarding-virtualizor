@@ -56,7 +56,7 @@ CLI tool untuk mengelola domain/port forwarding di lingkungan VPS Virtualizor de
 ### Dari PyPI (Recommended)
 
 ```bash
-pip install vf-forwarding
+pip install virtualizor-forwarding
 ```
 
 ### Dari Source
@@ -104,10 +104,11 @@ vf forward add -i
 
 ```bash
 # Basic
-vf config add myhost --url "https://panel.com:4083/index.php" --key "apikey" --pass "password"
+
+ myhost --url "https://panel.com:4083/index.php" --key "apikey" --pass "password"
 
 # Dengan set sebagai default
-vf config add myhost --url "https:index.php" --key "apikey" --pass "password" --default
+vf config add myhost --url "htthttps://panel.com:4083/index.php" --key "apikey" --pass "password" --default
 ```
 
 #### Kelola Host Profiles
