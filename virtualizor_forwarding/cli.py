@@ -170,9 +170,9 @@ class CLI:
         default_parser.set_defaults(func=self._cmd_config_set_default)
 
         # config test
-        test_parser = config_sub.add_parser("test", help="Test host connection")
+        test_parser = config_sub.add_parser("test", help="Test host connection(s)")
         test_parser.add_argument(
-            "name", nargs="?", help="Host profile name (default if omitted)"
+            "name", nargs="?", help="Host profile name (tests ALL hosts if omitted)"
         )
         test_parser.set_defaults(func=self._cmd_config_test)
 
@@ -327,19 +327,70 @@ class CLI:
     def _cmd_config_test(self, args: argparse.Namespace) -> int:
         """Handle config test command."""
         host_name = args.name or getattr(args, "host", None)
+
+        # If no host specified, test all hosts
+        if not host_name:
+            return self._cmd_config_test_all()
+
+        # Test specific host
         client = self._get_client(host_name)
 
-        with self._tui.show_spinner("Testing connection..."):
+        with self._tui.show_spinner(f"Testing connection to '{host_name}'..."):
             try:
                 client.test_connection()
-                self._tui.print_success("Connection successful!")
+                self._tui.print_success(f"Connection to '{host_name}' successful!")
                 return 0
             except AuthenticationError:
-                self._tui.print_error("Authentication failed. Check API credentials.")
+                self._tui.print_error(
+                    f"Authentication failed for '{host_name}'. Check API credentials."
+                )
                 return 1
             except Exception as e:
-                self._tui.print_error(f"Connection failed: {e}")
+                self._tui.print_error(f"Connection to '{host_name}' failed: {e}")
                 return 1
+
+    def _cmd_config_test_all(self) -> int:
+        """Test connection to all configured hosts."""
+        config = self._config_manager.load()
+
+        if not config.hosts:
+            self._tui.print_warning("No hosts configured. Use 'config add' to add one.")
+            return 1
+
+        self._tui.print_info(f"Testing {len(config.hosts)} host(s)...\n")
+
+        results = []
+        for host_name, profile in config.hosts.items():
+            try:
+                client = VirtualizorClient(profile)
+                client.test_connection()
+                results.append((host_name, True, None))
+                self._tui.print_success(f"  ✓ {host_name}")
+            except AuthenticationError:
+                results.append((host_name, False, "Authentication failed"))
+                self._tui.print_error(f"  ✗ {host_name} - Authentication failed")
+            except Exception as e:
+                results.append((host_name, False, str(e)))
+                self._tui.print_error(f"  ✗ {host_name} - {e}")
+
+        # Summary
+        success_count = sum(1 for _, success, _ in results if success)
+        fail_count = len(results) - success_count
+
+        print()  # Empty line before summary
+        if fail_count == 0:
+            self._tui.print_success(
+                f"All {success_count} host(s) connected successfully!"
+            )
+            return 0
+        elif success_count == 0:
+            self._tui.print_error(f"All {fail_count} host(s) failed to connect")
+            return 1
+        else:
+            self._tui.print_warning(
+                f"Results: {success_count} succeeded, {fail_count} failed"
+            )
+            return 1
 
     # VM command handlers
     def _cmd_vm_list(self, args: argparse.Namespace) -> int:
