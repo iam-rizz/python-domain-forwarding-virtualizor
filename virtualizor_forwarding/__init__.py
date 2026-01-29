@@ -5,7 +5,7 @@ CLI tool for managing domain/port forwarding in Virtualizor VPS environments
 with multi-host support and Rich TUI.
 """
 
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 __author__ = "Rizky Adhy Pratama"
 __email__ = "rizkyadhypratama@gmail.com"
 
