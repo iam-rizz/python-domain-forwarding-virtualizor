@@ -187,13 +187,13 @@ vf forward add --vpsid 103 --protocol HTTPS --domain secure.example.com
 vf forward add \
   --vpsid 103 \
   --protocol TCP \
-  --domain 45.158.126.130 \
+  --domain 45.158.126.xxx \
   --src-port 2222 \
   --dest-port 22
 
 # Short options
 vf forward add -v 103 -p HTTP -d app.example.com
-vf forward add -v 103 -p TCP -d 45.158.126.130 -s 2222 -t 22
+vf forward add -v 103 -p TCP -d 45.158.126.xxx -s 2222 -t 22
 ```
 
 #### Edit Forwarding Rule
@@ -305,7 +305,7 @@ Config file disimpan di `~/.config/virtualizor-forwarding/config.json`:
     },
     {
       "protocol": "TCP",
-      "src_hostname": "45.158.126.130",
+      "src_hostname": "45.158.126.xxx",
       "src_port": 2222,
       "dest_ip": "10.0.0.1",
       "dest_port": 22
@@ -385,7 +385,7 @@ vf forward add -v 103 -p HTTP -d mysite.com
 vf forward add -v 103 -p HTTPS -d mysite.com
 
 # 5. Tambah SSH access via custom port
-vf forward add -v 103 -p TCP -d 45.158.126.130 -s 2222 -t 22
+vf forward add -v 103 -p TCP -d 45.158.126.xxx -s 2222 -t 22
 
 # 6. Verifikasi
 vf forward list -v 103
