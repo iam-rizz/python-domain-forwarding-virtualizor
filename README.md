@@ -15,6 +15,9 @@
 
 CLI tool for managing domain/port forwarding in Virtualizor VPS environments with multi-host support and Rich TUI.
 
+> [!WARNING]
+> This library is still in development, and prone for extreme changes. You have been warned.
+
 **[🇮🇩 Baca dalam Bahasa Indonesia](README_ID.md)**
 
 ## Table of Contents
