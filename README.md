@@ -56,7 +56,7 @@ CLI tool for managing domain/port forwarding in Virtualizor VPS environments wit
 ### From PyPI (Recommended)
 
 ```bash
-pip install vf-forwarding
+pip install pip install virtualizor-forwarding
 ```
 
 ### From Source
