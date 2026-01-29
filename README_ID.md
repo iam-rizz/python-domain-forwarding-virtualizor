@@ -6,6 +6,13 @@
   <img src="https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-lightgrey" alt="Platform">
 </p>
 
+<p align="center">
+  <a href="https://sonarqube.rizzcode.id/dashboard?id=iam-rizz_python-domain-forwarding-virtualizor_288276e0-63bb-476b-a1a6-14ae07eee7a3"><img src="https://sonarqube.rizzcode.id/api/project_badges/measure?project=iam-rizz_python-domain-forwarding-virtualizor_288276e0-63bb-476b-a1a6-14ae07eee7a3&metric=alert_status&token=sqb_e60dd5ca23f95574dc0f802335bda3563a86cb81" alt="Quality Gate Status"></a>
+  <a href="https://sonarqube.rizzcode.id/dashboard?id=iam-rizz_python-domain-forwarding-virtualizor_288276e0-63bb-476b-a1a6-14ae07eee7a3"><img src="https://sonarqube.rizzcode.id/api/project_badges/measure?project=iam-rizz_python-domain-forwarding-virtualizor_288276e0-63bb-476b-a1a6-14ae07eee7a3&metric=software_quality_security_rating&token=sqb_e60dd5ca23f95574dc0f802335bda3563a86cb81" alt="Security Rating"></a>
+  <a href="https://sonarqube.rizzcode.id/dashboard?id=iam-rizz_python-domain-forwarding-virtualizor_288276e0-63bb-476b-a1a6-14ae07eee7a3"><img src="https://sonarqube.rizzcode.id/api/project_badges/measure?project=iam-rizz_python-domain-forwarding-virtualizor_288276e0-63bb-476b-a1a6-14ae07eee7a3&metric=software_quality_reliability_rating&token=sqb_e60dd5ca23f95574dc0f802335bda3563a86cb81" alt="Reliability Rating"></a>
+  <a href="https://sonarqube.rizzcode.id/dashboard?id=iam-rizz_python-domain-forwarding-virtualizor_288276e0-63bb-476b-a1a6-14ae07eee7a3"><img src="https://sonarqube.rizzcode.id/api/project_badges/measure?project=iam-rizz_python-domain-forwarding-virtualizor_288276e0-63bb-476b-a1a6-14ae07eee7a3&metric=ncloc&token=sqb_e60dd5ca23f95574dc0f802335bda3563a86cb81" alt="Lines of Code"></a>
+</p>
+
 CLI tool untuk mengelola domain/port forwarding di lingkungan VPS Virtualizor dengan dukungan multi-host dan Rich TUI.
 
 **[🇬🇧 Read in English](README.md)**
