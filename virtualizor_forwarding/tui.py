@@ -427,13 +427,14 @@ class TUIRenderer:
                 host_display += " [yellow]★[/yellow]"
 
             # Response time with color coding (adjusted for API calls)
-            if elapsed < 1000:
+            elapsed_sec = elapsed / 1000
+            if elapsed_sec < 1:
                 time_color = "green"
-            elif elapsed < 2000:
+            elif elapsed_sec < 2:
                 time_color = "yellow"
             else:
                 time_color = "red"
-            time_display = f"[{time_color}]{elapsed:.0f}ms[/{time_color}]"
+            time_display = f"[{time_color}]{elapsed_sec:.2f}s[/{time_color}]"
 
             # Details
             if success:
