@@ -104,8 +104,7 @@ vf forward add -i
 
 ```bash
 # Basic
-
- myhost --url "https://panel.com:4083/index.php" --key "apikey" --pass "password"
+vf config add myhost --url "https://panel.com:4083/index.php" --key "apikey" --pass "password"
 
 # Dengan set sebagai default
 vf config add myhost --url "https://panel.com:4083/index.php" --key "apikey" --pass "password" --default
