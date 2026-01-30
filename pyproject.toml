@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "virtualizor-forwarding"
-version = "1.0.3"
+version = "1.0.4"
 description = "CLI tool for managing domain/port forwarding in Virtualizor VPS environments with multi-host support"
 readme = "README.md"
 license = {text = "MIT"}
@@ -46,7 +46,7 @@ vf = "virtualizor_forwarding.cli:main"
 vfwd = "virtualizor_forwarding.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/iam-rizz/python-domain-forwarding-virtualizor"
+Homepage = "https://rizzcode.id"
 Repository = "https://github.com/iam-rizz/python-domain-forwarding-virtualizor.git"
 Issues = "https://github.com/iam-rizz/python-domain-forwarding-virtualizor/issues"
 

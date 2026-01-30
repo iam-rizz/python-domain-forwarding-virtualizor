@@ -7,7 +7,9 @@ Main entry point for all commands.
 from __future__ import annotations
 
 import argparse
+import json as json_module
 import sys
+import time
 from typing import Optional, List
 
 from .config import ConfigManager
@@ -18,6 +20,17 @@ from .services.forwarding_manager import ForwardingManager
 from .services.batch_processor import BatchProcessor
 from .tui import TUIRenderer
 from .utils import parse_comma_ids
+
+# Help text constants to avoid duplication (SonarQube)
+_HELP_HOST_PROFILE = "Host profile name"
+_HELP_VM_ID = "VM ID"
+_HELP_SRC_PORT = "Source port"
+_HELP_DEST_PORT = "Destination port"
+_HELP_INTERACTIVE = "Interactive mode"
+_HELP_JSON_OUTPUT = "Output as JSON"
+_HELP_PROTOCOL = "Protocol"
+_HELP_DOMAIN = "Source hostname/domain"
+_HELP_DEST_IP = "Destination IP"
 
 
 class CLI:
@@ -146,7 +159,7 @@ class CLI:
 
         # config add
         add_parser = config_sub.add_parser("add", help="Add new host profile")
-        add_parser.add_argument("name", help="Host profile name")
+        add_parser.add_argument("name", help=_HELP_HOST_PROFILE)
         add_parser.add_argument("--url", required=True, help="API URL")
         add_parser.add_argument("--key", required=True, help="API Key")
         add_parser.add_argument(
@@ -157,7 +170,7 @@ class CLI:
 
         # config remove
         rm_parser = config_sub.add_parser("remove", help="Remove host profile")
-        rm_parser.add_argument("name", help="Host profile name")
+        rm_parser.add_argument("name", help=_HELP_HOST_PROFILE)
         rm_parser.set_defaults(func=self._cmd_config_remove)
 
         # config list
@@ -166,13 +179,13 @@ class CLI:
 
         # config set-default
         default_parser = config_sub.add_parser("set-default", help="Set default host")
-        default_parser.add_argument("name", help="Host profile name")
+        default_parser.add_argument("name", help=_HELP_HOST_PROFILE)
         default_parser.set_defaults(func=self._cmd_config_set_default)
 
         # config test
         test_parser = config_sub.add_parser("test", help="Test host connection(s)")
         test_parser.add_argument(
-            "name", nargs="?", help="Host profile name (tests ALL hosts if omitted)"
+            "name", nargs="?", help=f"{_HELP_HOST_PROFILE} (tests ALL hosts if omitted)"
         )
         test_parser.set_defaults(func=self._cmd_config_test)
 
@@ -190,7 +203,7 @@ class CLI:
             "--all-hosts", action="store_true", help="List from all configured hosts"
         )
         list_parser.add_argument(
-            "--json", "-j", action="store_true", help="Output as JSON"
+            "--json", "-j", action="store_true", help=_HELP_JSON_OUTPUT
         )
         list_parser.set_defaults(func=self._cmd_vm_list)
 
@@ -203,51 +216,51 @@ class CLI:
 
         # forward list
         list_parser = fwd_sub.add_parser("list", help="List forwarding rules")
-        list_parser.add_argument("--vpsid", "-v", help="VM ID")
+        list_parser.add_argument("--vpsid", "-v", help=_HELP_VM_ID)
         list_parser.add_argument(
             "--auto", action="store_true", help="Auto-select if single VM"
         )
         list_parser.add_argument(
-            "--json", "-j", action="store_true", help="Output as JSON"
+            "--json", "-j", action="store_true", help=_HELP_JSON_OUTPUT
         )
         list_parser.set_defaults(func=self._cmd_forward_list)
 
         # forward add
         add_parser = fwd_sub.add_parser("add", help="Add forwarding rule")
-        add_parser.add_argument("--vpsid", "-v", help="VM ID")
+        add_parser.add_argument("--vpsid", "-v", help=_HELP_VM_ID)
         add_parser.add_argument(
-            "--protocol", "-p", choices=["HTTP", "HTTPS", "TCP"], help="Protocol"
+            "--protocol", "-p", choices=["HTTP", "HTTPS", "TCP"], help=_HELP_PROTOCOL
         )
-        add_parser.add_argument("--domain", "-d", help="Source hostname/domain")
-        add_parser.add_argument("--src-port", "-s", type=int, help="Source port")
-        add_parser.add_argument("--dest-port", "-t", type=int, help="Destination port")
+        add_parser.add_argument("--domain", "-d", help=_HELP_DOMAIN)
+        add_parser.add_argument("--src-port", "-s", type=int, help=_HELP_SRC_PORT)
+        add_parser.add_argument("--dest-port", "-t", type=int, help=_HELP_DEST_PORT)
         add_parser.add_argument(
-            "--dest-ip", help="Destination IP (default: VM internal IP)"
+            "--dest-ip", help=f"{_HELP_DEST_IP} (default: VM internal IP)"
         )
         add_parser.add_argument(
-            "--interactive", "-i", action="store_true", help="Interactive mode"
+            "--interactive", "-i", action="store_true", help=_HELP_INTERACTIVE
         )
         add_parser.set_defaults(func=self._cmd_forward_add)
 
         # forward edit
         edit_parser = fwd_sub.add_parser("edit", help="Edit forwarding rule")
-        edit_parser.add_argument("--vpsid", "-v", help="VM ID")
+        edit_parser.add_argument("--vpsid", "-v", help=_HELP_VM_ID)
         edit_parser.add_argument("--vdfid", "-f", help="Forwarding rule ID")
         edit_parser.add_argument(
-            "--protocol", "-p", choices=["HTTP", "HTTPS", "TCP"], help="Protocol"
+            "--protocol", "-p", choices=["HTTP", "HTTPS", "TCP"], help=_HELP_PROTOCOL
         )
-        edit_parser.add_argument("--domain", "-d", help="Source hostname/domain")
-        edit_parser.add_argument("--src-port", "-s", type=int, help="Source port")
-        edit_parser.add_argument("--dest-port", "-t", type=int, help="Destination port")
-        edit_parser.add_argument("--dest-ip", help="Destination IP")
+        edit_parser.add_argument("--domain", "-d", help=_HELP_DOMAIN)
+        edit_parser.add_argument("--src-port", "-s", type=int, help=_HELP_SRC_PORT)
+        edit_parser.add_argument("--dest-port", "-t", type=int, help=_HELP_DEST_PORT)
+        edit_parser.add_argument("--dest-ip", help=_HELP_DEST_IP)
         edit_parser.add_argument(
-            "--interactive", "-i", action="store_true", help="Interactive mode"
+            "--interactive", "-i", action="store_true", help=_HELP_INTERACTIVE
         )
         edit_parser.set_defaults(func=self._cmd_forward_edit)
 
         # forward delete
         del_parser = fwd_sub.add_parser("delete", help="Delete forwarding rules")
-        del_parser.add_argument("--vpsid", "-v", help="VM ID")
+        del_parser.add_argument("--vpsid", "-v", help=_HELP_VM_ID)
         del_parser.add_argument(
             "--vdfid", "-f", help="Forwarding rule ID(s), comma-separated"
         )
@@ -255,7 +268,7 @@ class CLI:
             "--force", action="store_true", help="Skip confirmation"
         )
         del_parser.add_argument(
-            "--interactive", "-i", action="store_true", help="Interactive mode"
+            "--interactive", "-i", action="store_true", help=_HELP_INTERACTIVE
         )
         del_parser.set_defaults(func=self._cmd_forward_delete)
 
@@ -268,7 +281,7 @@ class CLI:
 
         # batch import
         import_parser = batch_sub.add_parser("import", help="Import rules from JSON")
-        import_parser.add_argument("--vpsid", "-v", required=True, help="VM ID")
+        import_parser.add_argument("--vpsid", "-v", required=True, help=_HELP_VM_ID)
         import_parser.add_argument(
             "--from-file", "-f", required=True, help="JSON file path"
         )
@@ -279,7 +292,7 @@ class CLI:
 
         # batch export
         export_parser = batch_sub.add_parser("export", help="Export rules to JSON")
-        export_parser.add_argument("--vpsid", "-v", required=True, help="VM ID")
+        export_parser.add_argument("--vpsid", "-v", required=True, help=_HELP_VM_ID)
         export_parser.add_argument(
             "--to-file", "-o", required=True, help="Output file path"
         )
@@ -351,8 +364,6 @@ class CLI:
 
     def _cmd_config_test_all(self) -> int:
         """Test connection to all configured hosts."""
-        import time
-
         config = self._config_manager.load()
 
         if not config.hosts:
@@ -401,8 +412,6 @@ class CLI:
     # VM command handlers
     def _cmd_vm_list(self, args: argparse.Namespace) -> int:
         """Handle vm list command."""
-        import json as json_module
-
         if args.all_hosts:
             return self._cmd_vm_list_all_hosts(args)
 
@@ -426,8 +435,6 @@ class CLI:
 
     def _cmd_vm_list_all_hosts(self, args: argparse.Namespace) -> int:
         """List VMs from all configured hosts."""
-        import json as json_module
-
         config = self._config_manager.load()
 
         if not config.hosts:
@@ -483,8 +490,6 @@ class CLI:
     # Forward command handlers
     def _cmd_forward_list(self, args: argparse.Namespace) -> int:
         """Handle forward list command."""
-        import json as json_module
-
         client = self._get_client(getattr(args, "host", None))
         vm_manager = VMManager(client)
         fwd_manager = ForwardingManager(client)
