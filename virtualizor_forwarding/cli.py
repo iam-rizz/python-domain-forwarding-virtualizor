@@ -14,7 +14,7 @@ from typing import Optional, List
 
 from .config import ConfigManager
 from .api import VirtualizorClient, APIError, AuthenticationError
-from .models import HostProfile, Protocol, ForwardingRule, VMStatus
+from .models import HostProfile, Protocol, ForwardingRule, VMStatus, BatchResult
 from .services.vm_manager import VMManager
 from .services.forwarding_manager import ForwardingManager
 from .services.batch_processor import BatchProcessor
@@ -31,6 +31,9 @@ _HELP_JSON_OUTPUT = "Output as JSON"
 _HELP_PROTOCOL = "Protocol"
 _HELP_DOMAIN = "Source hostname/domain"
 _HELP_DEST_IP = "Destination IP"
+
+# Warning messages
+_MSG_NO_HOSTS = "No hosts configured. Use 'config add' to add one."
 
 
 class CLI:
@@ -321,11 +324,11 @@ class CLI:
         self._tui.print_success(f"Host '{args.name}' removed")
         return 0
 
-    def _cmd_config_list(self, args: argparse.Namespace) -> int:
+    def _cmd_config_list(self, _args: argparse.Namespace) -> int:
         """Handle config list command."""
         config = self._config_manager.load()
         if not config.hosts:
-            self._tui.print_warning("No hosts configured. Use 'config add' to add one.")
+            self._tui.print_warning(_MSG_NO_HOSTS)
             return 0
 
         self._tui.render_host_tree(config.hosts, config.default_host)
@@ -367,7 +370,7 @@ class CLI:
         config = self._config_manager.load()
 
         if not config.hosts:
-            self._tui.print_warning("No hosts configured. Use 'config add' to add one.")
+            self._tui.print_warning(_MSG_NO_HOSTS)
             return 1
 
         self._tui.print_info(f"Testing {len(config.hosts)} host(s)...\n")
@@ -438,7 +441,7 @@ class CLI:
         config = self._config_manager.load()
 
         if not config.hosts:
-            self._tui.print_warning("No hosts configured. Use 'config add' to add one.")
+            self._tui.print_warning(_MSG_NO_HOSTS)
             return 1
 
         all_vms_data = []  # For JSON output
@@ -527,56 +530,19 @@ class CLI:
         fwd_manager = ForwardingManager(client)
 
         # Get VPSID
-        vpsid = args.vpsid
-        if not vpsid or args.interactive:
-            vms = vm_manager.list_all()
-            vm = self._tui.prompt_vm_selection(vms)
-            if not vm:
-                return 1
-            vpsid = vm.vpsid
+        vpsid = self._get_vpsid_for_forward(args, vm_manager)
+        if not vpsid:
+            return 1
 
         # Get protocol
         protocol = Protocol.from_string(args.protocol) if args.protocol else None
         if not protocol or args.interactive:
             protocol = self._tui.prompt_protocol(protocol)
 
-        # Auto-configure ports for HTTP/HTTPS
-        auto_src, auto_dest = fwd_manager.auto_configure_ports(protocol)
-
-        # Get source hostname
-        src_hostname = args.domain
-        if not src_hostname or args.interactive:
-            if protocol == Protocol.TCP:
-                # For TCP, get source IP from HAProxy config
-                src_ip = fwd_manager.get_source_ip_for_tcp(vpsid)
-                src_hostname = self._tui.prompt_input("Source IP", default=src_ip)
-            else:
-                src_hostname = self._tui.prompt_input("Domain name")
-
-        # Get ports
-        src_port = args.src_port or auto_src
-        dest_port = args.dest_port or auto_dest
-
-        if src_port is None or args.interactive:
-            src_port = self._tui.prompt_int("Source port", default=src_port)
-        if dest_port is None or args.interactive:
-            dest_port = self._tui.prompt_int("Destination port", default=dest_port)
-
-        # Get destination IP
-        dest_ip = args.dest_ip
-        if not dest_ip:
-            dest_ip = vm_manager.get_internal_ip(vpsid)
-        if not dest_ip or args.interactive:
-            dest_ip = self._tui.prompt_input("Destination IP", default=dest_ip)
-
-        # Create rule
-        rule = ForwardingRule(
-            protocol=protocol,
-            src_hostname=src_hostname,
-            src_port=src_port,
-            dest_ip=dest_ip,
-            dest_port=dest_port,
-        )
+        # Get rule parameters
+        rule = self._build_forward_rule(args, vpsid, protocol, vm_manager, fwd_manager)
+        if not rule:
+            return 1
 
         # Show confirmation
         self._tui.render_rule_detail(rule)
@@ -585,15 +551,100 @@ class CLI:
             return 0
 
         # Execute
+        return self._execute_add_rule(fwd_manager, vpsid, rule)
+
+    def _get_vpsid_for_forward(
+        self, args: argparse.Namespace, vm_manager: VMManager
+    ) -> Optional[str]:
+        """Get VPSID from args or prompt user."""
+        vpsid = args.vpsid
+        if not vpsid or args.interactive:
+            vms = vm_manager.list_all()
+            vm = self._tui.prompt_vm_selection(vms)
+            if not vm:
+                return None
+            vpsid = vm.vpsid
+        return vpsid
+
+    def _build_forward_rule(
+        self,
+        args: argparse.Namespace,
+        vpsid: str,
+        protocol: Protocol,
+        vm_manager: VMManager,
+        fwd_manager: ForwardingManager,
+    ) -> Optional[ForwardingRule]:
+        """Build forwarding rule from args and prompts."""
+        # Auto-configure ports for HTTP/HTTPS
+        auto_src, auto_dest = fwd_manager.auto_configure_ports(protocol)
+
+        # Get source hostname
+        src_hostname = self._get_source_hostname(args, vpsid, protocol, fwd_manager)
+
+        # Get ports
+        src_port, dest_port = self._get_ports(args, auto_src, auto_dest)
+
+        # Get destination IP
+        dest_ip = args.dest_ip
+        if not dest_ip:
+            dest_ip = vm_manager.get_internal_ip(vpsid)
+        if not dest_ip or args.interactive:
+            dest_ip = self._tui.prompt_input("Destination IP", default=dest_ip)
+
+        return ForwardingRule(
+            protocol=protocol,
+            src_hostname=src_hostname,
+            src_port=src_port,
+            dest_ip=dest_ip,
+            dest_port=dest_port,
+        )
+
+    def _get_source_hostname(
+        self,
+        args: argparse.Namespace,
+        vpsid: str,
+        protocol: Protocol,
+        fwd_manager: ForwardingManager,
+    ) -> str:
+        """Get source hostname from args or prompt."""
+        src_hostname = args.domain
+        if not src_hostname or args.interactive:
+            if protocol == Protocol.TCP:
+                src_ip = fwd_manager.get_source_ip_for_tcp(vpsid)
+                src_hostname = self._tui.prompt_input("Source IP", default=src_ip)
+            else:
+                src_hostname = self._tui.prompt_input("Domain name")
+        return src_hostname
+
+    def _get_ports(
+        self,
+        args: argparse.Namespace,
+        auto_src: Optional[int],
+        auto_dest: Optional[int],
+    ) -> tuple:
+        """Get source and destination ports from args or prompts."""
+        src_port = args.src_port or auto_src
+        dest_port = args.dest_port or auto_dest
+
+        if src_port is None or args.interactive:
+            src_port = self._tui.prompt_int("Source port", default=src_port)
+        if dest_port is None or args.interactive:
+            dest_port = self._tui.prompt_int("Destination port", default=dest_port)
+
+        return src_port, dest_port
+
+    def _execute_add_rule(
+        self, fwd_manager: ForwardingManager, vpsid: str, rule: ForwardingRule
+    ) -> int:
+        """Execute add rule and return exit code."""
         with self._tui.show_spinner("Adding forwarding rule..."):
             response = fwd_manager.add_rule(vpsid, rule)
 
         if response.success:
             self._tui.print_success("Forwarding rule added successfully")
             return 0
-        else:
-            self._tui.print_error(f"Failed: {response.get_error_message()}")
-            return 1
+        self._tui.print_error(f"Failed: {response.get_error_message()}")
+        return 1
 
     def _cmd_forward_edit(self, args: argparse.Namespace) -> int:
         """Handle forward edit command."""
@@ -602,40 +653,63 @@ class CLI:
         fwd_manager = ForwardingManager(client)
 
         # Get VPSID
-        vpsid = args.vpsid
-        if not vpsid or args.interactive:
-            vms = vm_manager.list_all()
-            vm = self._tui.prompt_vm_selection(vms)
-            if not vm:
-                return 1
-            vpsid = vm.vpsid
+        vpsid = self._get_vpsid_for_forward(args, vm_manager)
+        if not vpsid:
+            return 1
 
         # Get rule to edit
+        current_rule, vdfid = self._get_rule_to_edit(args, vpsid, fwd_manager)
+        if not current_rule:
+            return 1
+
+        # Build updated rule
+        updated_rule = self._build_updated_rule(args, current_rule, fwd_manager)
+
+        # Show comparison and confirm
+        self._tui.render_comparison(current_rule, updated_rule)
+        if not self._tui.prompt_confirm("Apply these changes?", default=True):
+            self._tui.print_warning("Cancelled")
+            return 0
+
+        # Execute
+        return self._execute_edit_rule(fwd_manager, vpsid, vdfid, updated_rule)
+
+    def _get_rule_to_edit(
+        self, args: argparse.Namespace, vpsid: str, fwd_manager: ForwardingManager
+    ) -> tuple:
+        """Get rule to edit from args or prompt."""
         vdfid = args.vdfid
         if not vdfid or args.interactive:
             rules = fwd_manager.list_rules(vpsid)
             rule = self._tui.prompt_rule_selection(rules)
             if not rule:
-                return 1
-            vdfid = rule.id
-            current_rule = rule
-        else:
-            current_rule = fwd_manager.get_rule_by_id(vpsid, vdfid)
-            if not current_rule:
-                self._tui.print_error(f"Rule {vdfid} not found")
-                return 1
+                return None, None
+            return rule, rule.id
 
-        # Get new values (use current as defaults)
+        current_rule = fwd_manager.get_rule_by_id(vpsid, vdfid)
+        if not current_rule:
+            self._tui.print_error(f"Rule {vdfid} not found")
+            return None, None
+        return current_rule, vdfid
+
+    def _build_updated_rule(
+        self,
+        args: argparse.Namespace,
+        current_rule: ForwardingRule,
+        fwd_manager: ForwardingManager,
+    ) -> ForwardingRule:
+        """Build updated rule from args and current rule."""
+        # Get protocol
         protocol = Protocol.from_string(args.protocol) if args.protocol else None
         if args.interactive:
             protocol = self._tui.prompt_protocol(current_rule.protocol)
 
         # Auto-configure ports if protocol changed
+        auto_src, auto_dest = None, None
         if protocol and protocol != current_rule.protocol:
             auto_src, auto_dest = fwd_manager.auto_configure_ports(protocol)
-        else:
-            auto_src, auto_dest = None, None
 
+        # Get updated values
         src_hostname = args.domain
         if args.interactive:
             src_hostname = self._tui.prompt_input(
@@ -658,8 +732,7 @@ class CLI:
         if args.interactive:
             dest_ip = self._tui.prompt_input("Dest IP", default=current_rule.dest_ip)
 
-        # Merge updates
-        updated_rule = fwd_manager.merge_rule_update(
+        return fwd_manager.merge_rule_update(
             current_rule,
             protocol=protocol,
             src_hostname=src_hostname,
@@ -668,22 +741,22 @@ class CLI:
             dest_ip=dest_ip,
         )
 
-        # Show comparison
-        self._tui.render_comparison(current_rule, updated_rule)
-        if not self._tui.prompt_confirm("Apply these changes?", default=True):
-            self._tui.print_warning("Cancelled")
-            return 0
-
-        # Execute
+    def _execute_edit_rule(
+        self,
+        fwd_manager: ForwardingManager,
+        vpsid: str,
+        vdfid: str,
+        updated_rule: ForwardingRule,
+    ) -> int:
+        """Execute edit rule and return exit code."""
         with self._tui.show_spinner("Updating forwarding rule..."):
             response = fwd_manager.edit_rule(vpsid, vdfid, updated_rule)
 
         if response.success:
             self._tui.print_success("Forwarding rule updated successfully")
             return 0
-        else:
-            self._tui.print_error(f"Failed: {response.get_error_message()}")
-            return 1
+        self._tui.print_error(f"Failed: {response.get_error_message()}")
+        return 1
 
     def _cmd_forward_delete(self, args: argparse.Namespace) -> int:
         """Handle forward delete command."""
@@ -692,25 +765,12 @@ class CLI:
         fwd_manager = ForwardingManager(client)
 
         # Get VPSID
-        vpsid = args.vpsid
-        if not vpsid or args.interactive:
-            vms = vm_manager.list_all()
-            vm = self._tui.prompt_vm_selection(vms)
-            if not vm:
-                return 1
-            vpsid = vm.vpsid
+        vpsid = self._get_vpsid_for_forward(args, vm_manager)
+        if not vpsid:
+            return 1
 
         # Get rule IDs to delete
-        vdfids = []
-        if args.vdfid:
-            vdfids = parse_comma_ids(args.vdfid)
-        elif args.interactive:
-            rules = fwd_manager.list_rules(vpsid)
-            rule = self._tui.prompt_rule_selection(rules)
-            if not rule:
-                return 1
-            vdfids = [rule.id]
-
+        vdfids = self._get_rule_ids_to_delete(args, vpsid, fwd_manager)
         if not vdfids:
             self._tui.print_error("No rule IDs specified")
             return 1
@@ -725,15 +785,33 @@ class CLI:
                 return 0
 
         # Execute
+        return self._execute_delete_rules(fwd_manager, vpsid, vdfids)
+
+    def _get_rule_ids_to_delete(
+        self, args: argparse.Namespace, vpsid: str, fwd_manager: ForwardingManager
+    ) -> List[str]:
+        """Get rule IDs to delete from args or prompt."""
+        if args.vdfid:
+            return parse_comma_ids(args.vdfid)
+        if args.interactive:
+            rules = fwd_manager.list_rules(vpsid)
+            rule = self._tui.prompt_rule_selection(rules)
+            if rule:
+                return [rule.id]
+        return []
+
+    def _execute_delete_rules(
+        self, fwd_manager: ForwardingManager, vpsid: str, vdfids: List[str]
+    ) -> int:
+        """Execute delete rules and return exit code."""
         with self._tui.show_spinner("Deleting forwarding rules..."):
             response = fwd_manager.delete_rules(vpsid, vdfids)
 
         if response.success:
             self._tui.print_success(f"Deleted {len(vdfids)} forwarding rule(s)")
             return 0
-        else:
-            self._tui.print_error(f"Failed: {response.get_error_message()}")
-            return 1
+        self._tui.print_error(f"Failed: {response.get_error_message()}")
+        return 1
 
     # Batch command handlers
     def _cmd_batch_import(self, args: argparse.Namespace) -> int:
@@ -757,14 +835,11 @@ class CLI:
         if args.dry_run:
             self._tui.print_info("Dry run mode - validating only")
 
-        # Execute batch
-        def progress_callback(current: int, total: int) -> None:
-            pass  # Progress handled by Rich
-
+        # Execute batch with progress
         with self._tui.show_progress(len(rules), "Processing rules") as progress:
-            task_id = progress._task_id
+            task_id = progress._task_id  # noqa: SLF001
 
-            def update_progress(current: int, total: int) -> None:
+            def update_progress(current: int, _total: int) -> None:
                 progress.update(task_id, completed=current)
 
             result = batch_processor.execute_batch(
@@ -775,6 +850,10 @@ class CLI:
             )
 
         # Show results
+        return self._show_batch_results(result)
+
+    def _show_batch_results(self, result: BatchResult) -> int:
+        """Show batch operation results and return exit code."""
         if result.is_complete_success:
             self._tui.print_success(f"All {result.total} rules processed successfully")
         elif result.is_partial_success:
@@ -785,8 +864,8 @@ class CLI:
         else:
             self._tui.print_error(f"All {result.total} rules failed")
 
-        # Show errors
-        for error in result.errors[:5]:  # Show first 5 errors
+        # Show errors (max 5)
+        for error in result.errors[:5]:
             self._tui.print_error(f"  - {error.get('error', 'Unknown error')}")
 
         if len(result.errors) > 5:

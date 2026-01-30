@@ -126,35 +126,45 @@ class BatchProcessor:
                 progress_callback(i + 1, len(rules))
 
             if dry_run:
-                # Validate only
-                haproxy_config = self._manager.get_haproxy_config(vpsid)
-                validation = self._manager.validate_port(
-                    rule.src_port, haproxy_config, rule.protocol
-                )
-                if validation.valid:
-                    result.add_success()
-                else:
-                    result.add_failure(
-                        {
-                            "rule": rule.to_dict(),
-                            "error": validation.message,
-                            "suggestions": validation.suggestions,
-                        }
-                    )
+                self._process_dry_run(vpsid, rule, result)
             else:
-                # Execute add
-                try:
-                    response = self._manager.add_rule(vpsid, rule)
-                    if response.success:
-                        result.add_success()
-                    else:
-                        result.add_failure(
-                            {
-                                "rule": rule.to_dict(),
-                                "error": response.get_error_message(),
-                            }
-                        )
-                except Exception as e:
-                    result.add_failure({"rule": rule.to_dict(), "error": str(e)})
+                self._process_add_rule(vpsid, rule, result)
 
         return result
+
+    def _process_dry_run(
+        self, vpsid: str, rule: ForwardingRule, result: BatchResult
+    ) -> None:
+        """Process a single rule in dry-run mode (validation only)."""
+        haproxy_config = self._manager.get_haproxy_config(vpsid)
+        validation = self._manager.validate_port(
+            rule.src_port, haproxy_config, rule.protocol
+        )
+        if validation.valid:
+            result.add_success()
+        else:
+            result.add_failure(
+                {
+                    "rule": rule.to_dict(),
+                    "error": validation.message,
+                    "suggestions": validation.suggestions,
+                }
+            )
+
+    def _process_add_rule(
+        self, vpsid: str, rule: ForwardingRule, result: BatchResult
+    ) -> None:
+        """Process a single rule by adding it."""
+        try:
+            response = self._manager.add_rule(vpsid, rule)
+            if response.success:
+                result.add_success()
+            else:
+                result.add_failure(
+                    {
+                        "rule": rule.to_dict(),
+                        "error": response.get_error_message(),
+                    }
+                )
+        except Exception as e:  # noqa: BLE001
+            result.add_failure({"rule": rule.to_dict(), "error": str(e)})
