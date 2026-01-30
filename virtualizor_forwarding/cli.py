@@ -21,19 +21,19 @@ from .services.batch_processor import BatchProcessor
 from .tui import TUIRenderer
 from .utils import parse_comma_ids
 
-# Help text constants to avoid duplication (SonarQube)
-_HELP_HOST_PROFILE = "Host profile name"
-_HELP_VM_ID = "VM ID"
-_HELP_SRC_PORT = "Source port"
-_HELP_DEST_PORT = "Destination port"
-_HELP_INTERACTIVE = "Interactive mode"
-_HELP_JSON_OUTPUT = "Output as JSON"
-_HELP_PROTOCOL = "Protocol"
-_HELP_DOMAIN = "Source hostname/domain"
-_HELP_DEST_IP = "Destination IP"
+# Help text constants - user-friendly descriptions
+_HELP_HOST_PROFILE = "Name of the host profile (e.g., NAT-US1, NAT-ID3)"
+_HELP_VM_ID = "Virtual Machine ID (VPSID) from 'vf vm list'"
+_HELP_SRC_PORT = "Source port number (external port)"
+_HELP_DEST_PORT = "Destination port number (internal port on VM)"
+_HELP_INTERACTIVE = "Use interactive mode with prompts"
+_HELP_JSON_OUTPUT = "Output result in JSON format"
+_HELP_PROTOCOL = "Forwarding protocol: HTTP, HTTPS, or TCP"
+_HELP_DOMAIN = "Domain name or hostname for HTTP/HTTPS forwarding"
+_HELP_DEST_IP = "Destination IP address (VM internal IP)"
 
 # Warning messages
-_MSG_NO_HOSTS = "No hosts configured. Use 'config add' to add one."
+_MSG_NO_HOSTS = "No hosts configured. Use 'vf config add' to add one first."
 
 
 class CLI:

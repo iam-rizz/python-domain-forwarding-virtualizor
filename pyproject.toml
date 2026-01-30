@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "virtualizor-forwarding"
-version = "1.0.4"
+version = "1.0.5"
 description = "CLI tool for managing domain/port forwarding in Virtualizor VPS environments with multi-host support"
 readme = "README.md"
 license = {text = "MIT"}

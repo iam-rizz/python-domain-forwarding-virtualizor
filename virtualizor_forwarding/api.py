@@ -199,8 +199,16 @@ class VirtualizorClient:
         if not haproxy_data:
             return []
 
+        # Handle both dict and list responses from API
         rules = []
-        for rule_data in haproxy_data.values():
+        if isinstance(haproxy_data, dict):
+            rule_items = haproxy_data.values()
+        elif isinstance(haproxy_data, list):
+            rule_items = haproxy_data
+        else:
+            return []
+
+        for rule_data in rule_items:
             try:
                 rule = ForwardingRule.from_api_response(rule_data)
                 rules.append(rule)

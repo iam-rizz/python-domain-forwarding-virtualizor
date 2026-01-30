@@ -300,8 +300,14 @@ class HAProxyConfig:
         if not haconfigs:
             return cls()
 
-        # Get first haconfig
-        config = next(iter(haconfigs.values()), {})
+        # Handle both dict and list responses from API
+        if isinstance(haconfigs, dict):
+            config = next(iter(haconfigs.values()), {})
+        elif isinstance(haconfigs, list) and haconfigs:
+            config = haconfigs[0] if isinstance(haconfigs[0], dict) else {}
+        else:
+            return cls()
+
         return cls(
             allowed_ports=config.get("haproxy_allowedports"),
             reserved_ports=config.get("haproxy_reservedports"),
