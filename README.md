@@ -167,9 +167,16 @@ vf vm list --status down    # Only stopped VMs
 # List VMs from all hosts (with details per host)
 vf vm list --all-hosts
 
+# List running VMs from all hosts
+vf vm list --all-hosts --status up
+
+# List stopped VMs from all hosts
+vf vm list --all-hosts --status down
+
 # JSON output (for scripting)
 vf vm list --json
 vf vm list --status up --json
+vf vm list --all-hosts --json
 ```
 
 ### 3. Port Forwarding
@@ -365,6 +372,7 @@ Config file is stored at `~/.config/virtualizor-forwarding/config.json`:
 | `vf vm list` | List VMs |
 | `vf vm list --status up/down` | Filter VMs by status |
 | `vf vm list --all-hosts` | List VMs from all hosts with details |
+| `vf vm list --all-hosts --status up` | List running VMs from all hosts |
 | `vf vm list --json` | Output in JSON format |
 
 ### Forward Commands

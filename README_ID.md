@@ -167,9 +167,16 @@ vf vm list --status down    # Hanya VM yang stopped
 # Lihat VM dari semua host (dengan detail per host)
 vf vm list --all-hosts
 
+# Lihat VM running dari semua host
+vf vm list --all-hosts --status up
+
+# Lihat VM stopped dari semua host
+vf vm list --all-hosts --status down
+
 # Output JSON (untuk scripting)
 vf vm list --json
 vf vm list --status up --json
+vf vm list --all-hosts --json
 ```
 
 ### 3. Port Forwarding
@@ -365,6 +372,7 @@ Config file disimpan di `~/.config/virtualizor-forwarding/config.json`:
 | `vf vm list` | Lihat daftar VM |
 | `vf vm list --status up/down` | Filter VM berdasarkan status |
 | `vf vm list --all-hosts` | Lihat VM dari semua host dengan detail |
+| `vf vm list --all-hosts --status up` | Lihat VM running dari semua host |
 | `vf vm list --json` | Output dalam format JSON |
 
 ### Forward Commands
