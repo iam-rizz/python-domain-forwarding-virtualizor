@@ -329,7 +329,7 @@ class CLI:
         config = self._config_manager.load()
         if not config.hosts:
             self._tui.print_warning(_MSG_NO_HOSTS)
-            return 0
+            return 1
 
         self._tui.render_host_tree(config.hosts, config.default_host)
         return 0
@@ -448,46 +448,64 @@ class CLI:
         total_vms = 0
 
         for host_name, profile in config.hosts.items():
-            with self._tui.show_spinner(f"Fetching VMs from '{host_name}'..."):
-                try:
-                    client = VirtualizorClient(profile)
-                    vm_manager = VMManager(client)
-                    vms = vm_manager.list_all()
-                except AuthenticationError:
-                    self._tui.print_error(
-                        f"Authentication failed for '{host_name}'. Skipping..."
-                    )
-                    continue
-                except APIError as e:
-                    self._tui.print_error(f"Failed to fetch from '{host_name}': {e}")
-                    continue
+            vms = self._fetch_vms_from_host(host_name, profile)
+            if vms is None:
+                continue
 
             if args.json:
-                # Collect for JSON output
-                for vm in vms:
-                    vm_dict = vm.to_dict()
-                    vm_dict["host"] = host_name
-                    all_vms_data.append(vm_dict)
+                self._collect_vms_for_json(vms, host_name, all_vms_data)
             else:
-                # Display table per host
-                if vms:
-                    self._tui.render_vm_table(
-                        vms, title=f"VMs on {host_name} ({len(vms)})"
-                    )
-                    print()  # Empty line between hosts
-                else:
-                    self._tui.print_warning(f"No VMs found on '{host_name}'")
+                self._display_host_vms(vms, host_name)
 
             total_vms += len(vms)
 
-        if args.json:
+        return self._output_all_hosts_result(args.json, all_vms_data, total_vms, config)
+
+    def _fetch_vms_from_host(
+        self, host_name: str, profile: HostProfile
+    ) -> Optional[List]:
+        """Fetch VMs from a single host, return None on error."""
+        with self._tui.show_spinner(f"Fetching VMs from '{host_name}'..."):
+            try:
+                client = VirtualizorClient(profile)
+                vm_manager = VMManager(client)
+                return vm_manager.list_all()
+            except AuthenticationError:
+                self._tui.print_error(
+                    f"Authentication failed for '{host_name}'. Skipping..."
+                )
+                return None
+            except APIError as e:
+                self._tui.print_error(f"Failed to fetch from '{host_name}': {e}")
+                return None
+
+    def _collect_vms_for_json(
+        self, vms: List, host_name: str, all_vms_data: List
+    ) -> None:
+        """Collect VMs data for JSON output."""
+        for vm in vms:
+            vm_dict = vm.to_dict()
+            vm_dict["host"] = host_name
+            all_vms_data.append(vm_dict)
+
+    def _display_host_vms(self, vms: List, host_name: str) -> None:
+        """Display VMs table for a single host."""
+        if vms:
+            self._tui.render_vm_table(vms, title=f"VMs on {host_name} ({len(vms)})")
+            print()  # Empty line between hosts
+        else:
+            self._tui.print_warning(f"No VMs found on '{host_name}'")
+
+    def _output_all_hosts_result(
+        self, is_json: bool, all_vms_data: List, total_vms: int, config
+    ) -> int:
+        """Output final result for all hosts listing."""
+        if is_json:
             print(json_module.dumps(all_vms_data, indent=2))
         else:
-            # Summary
             self._tui.print_success(
                 f"Total: {total_vms} VM(s) across {len(config.hosts)} host(s)"
             )
-
         return 0
 
     # Forward command handlers
@@ -627,9 +645,9 @@ class CLI:
         dest_port = args.dest_port or auto_dest
 
         if src_port is None or args.interactive:
-            src_port = self._tui.prompt_int("Source port", default=src_port)
+            src_port = self._tui.prompt_int(_HELP_SRC_PORT, default=src_port)
         if dest_port is None or args.interactive:
-            dest_port = self._tui.prompt_int("Destination port", default=dest_port)
+            dest_port = self._tui.prompt_int(_HELP_DEST_PORT, default=dest_port)
 
         return src_port, dest_port
 
@@ -719,13 +737,13 @@ class CLI:
         src_port = args.src_port or auto_src
         if args.interactive:
             src_port = self._tui.prompt_int(
-                "Source port", default=src_port or current_rule.src_port
+                _HELP_SRC_PORT, default=src_port or current_rule.src_port
             )
 
         dest_port = args.dest_port or auto_dest
         if args.interactive:
             dest_port = self._tui.prompt_int(
-                "Dest port", default=dest_port or current_rule.dest_port
+                _HELP_DEST_PORT, default=dest_port or current_rule.dest_port
             )
 
         dest_ip = args.dest_ip
