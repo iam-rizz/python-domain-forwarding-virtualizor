@@ -14,6 +14,19 @@
   <a href="https://sonarqube.rizzcode.id/dashboard?id=iam-rizz_python-domain-forwarding-virtualizor_288276e0-63bb-476b-a1a6-14ae07eee7a3"><img src="https://sonarqube.rizzcode.id/api/project_badges/measure?project=iam-rizz_python-domain-forwarding-virtualizor_288276e0-63bb-476b-a1a6-14ae07eee7a3&metric=ncloc&token=sqb_e60dd5ca23f95574dc0f802335bda3563a86cb81" alt="Lines of Code"></a>
 </p>
 
+### Recommended VPS, NAT VPS (Virtualizor) & Hosting
+
+<div align="center">
+
+Need a VPS to test this script? **[HostData.id](https://hostdata.id)** provides a wide selection of reliable hosting options at affordable prices.
+
+[![HostData.id](https://img.shields.io/badge/HostData.id-VPS%20Trusted-FF6B35?style=flat&logo=server&logoColor=white)](https://hostdata.id) 
+[![NAT VPS](https://img.shields.io/badge/NAT%20VPS-Start%20from%2015K/Month-00C851?style=flat)](https://hostdata.id/nat-vps)
+[![VPS Indonesia](https://img.shields.io/badge/VPS%20Indonesia-Start%20from%20200K/Month-007ACC?style=flat&logo=server)](https://hostdata.id/vps-indonesia)
+[![Dedicated Server](https://img.shields.io/badge/Dedicated%20Server-Enterprise%20Ready-8B5CF6?style=flat&logo=server)](https://hostdata.id/dedicated-server)
+
+</div>
+
 CLI tool for managing domain/port forwarding in Virtualizor VPS environments with multi-host support and Rich TUI.
 
 > [!WARNING]

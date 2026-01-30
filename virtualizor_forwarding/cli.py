@@ -444,11 +444,14 @@ class CLI:
             self._tui.print_warning(_MSG_NO_HOSTS)
             return 1
 
+        # Get status filter if provided
+        status_filter = VMStatus(args.status) if args.status else None
+
         all_vms_data = []  # For JSON output
         total_vms = 0
 
         for host_name, profile in config.hosts.items():
-            vms = self._fetch_vms_from_host(host_name, profile)
+            vms = self._fetch_vms_from_host(host_name, profile, status_filter)
             if vms is None:
                 continue
 
@@ -462,14 +465,17 @@ class CLI:
         return self._output_all_hosts_result(args.json, all_vms_data, total_vms, config)
 
     def _fetch_vms_from_host(
-        self, host_name: str, profile: HostProfile
+        self,
+        host_name: str,
+        profile: HostProfile,
+        status_filter: Optional[VMStatus] = None,
     ) -> Optional[List]:
         """Fetch VMs from a single host, return None on error."""
         with self._tui.show_spinner(f"Fetching VMs from '{host_name}'..."):
             try:
                 client = VirtualizorClient(profile)
                 vm_manager = VMManager(client)
-                return vm_manager.list_all()
+                return vm_manager.list_all(status_filter)
             except AuthenticationError:
                 self._tui.print_error(
                     f"Authentication failed for '{host_name}'. Skipping..."

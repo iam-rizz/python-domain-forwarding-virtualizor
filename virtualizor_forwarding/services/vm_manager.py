@@ -24,12 +24,12 @@ class VMManager:
         """
         self._client = client
 
-    def list_all(self, status_filter: Optional[str] = None) -> List[VMInfo]:
+    def list_all(self, status_filter: Optional[VMStatus] = None) -> List[VMInfo]:
         """
         List all VMs with optional status filter.
 
         Args:
-            status_filter: Filter by status ('up' or 'down').
+            status_filter: Filter by VMStatus (UP or DOWN).
 
         Returns:
             List of VMInfo objects.
@@ -37,8 +37,7 @@ class VMManager:
         vms = self._client.list_vms()
 
         if status_filter:
-            filter_status = VMStatus(status_filter.lower())
-            vms = [vm for vm in vms if vm.status == filter_status]
+            vms = [vm for vm in vms if vm.status == status_filter]
 
         return vms
 
