@@ -12,6 +12,7 @@ import sys
 import time
 from typing import Optional, List
 
+from . import __version__, __author__, __github__, __telegram__, __forum__, __email__
 from .config import ConfigManager
 from .api import VirtualizorClient, APIError, AuthenticationError
 from .models import HostProfile, Protocol, ForwardingRule, VMStatus, BatchResult
@@ -20,6 +21,7 @@ from .services.forwarding_manager import ForwardingManager
 from .services.batch_processor import BatchProcessor
 from .tui import TUIRenderer
 from .utils import parse_comma_ids
+from .updater import check_update_cached, get_latest_version, is_update_available
 
 # Help text constants - user-friendly descriptions
 _HELP_HOST_PROFILE = "Name of the host profile (e.g., NAT-US1, NAT-ID3)"
@@ -100,9 +102,17 @@ class CLI:
         no_color = getattr(parsed, "no_color", False)
         self._tui = TUIRenderer(no_color=no_color)
 
+        # Handle --version flag
+        if getattr(parsed, "version", False):
+            self._print_version()
+            return 0
+
         if not hasattr(parsed, "func"):
             parser.print_help()
             return 0
+
+        # Background update check (once per day, non-blocking)
+        self._check_update_background()
 
         try:
             return parsed.func(parsed)
@@ -118,11 +128,34 @@ class CLI:
             self._tui.print_error(f"Error: {e}")
             return 1
 
+    def _print_version(self) -> None:
+        """Print version information."""
+        print(f"Virtualizor Forwarding Tool v{__version__}")
+        print(f"Author: {__author__}")
+        print(f"GitHub: {__github__}")
+
+    def _check_update_background(self) -> None:
+        """Check for updates in background (cached, once per day)."""
+        try:
+            latest, is_new = check_update_cached()
+            if latest and is_update_available(latest):
+                self._tui.print_info(
+                    f"New version available: {latest} (current: {__version__})"
+                )
+                self._tui.console.print(
+                    "  Run: [cyan]pip install --upgrade virtualizor-forwarding[/cyan]\n"
+                )
+        except Exception:  # noqa: BLE001
+            pass  # Silently ignore update check errors
+
     def _create_parser(self) -> argparse.ArgumentParser:
         """Create argument parser with all subcommands."""
         parser = argparse.ArgumentParser(
             prog="vf",
             description="Virtualizor Domain/Port Forwarding Manager",
+        )
+        parser.add_argument(
+            "--version", "-V", action="store_true", help="Show version and exit"
         )
         parser.add_argument(
             "--host", "-H", help="Use specific host profile", metavar="NAME"
@@ -136,6 +169,14 @@ class CLI:
         parser.add_argument("--debug", action="store_true", help="Debug mode")
 
         subparsers = parser.add_subparsers(title="commands", dest="command")
+
+        # About command
+        about_parser = subparsers.add_parser("about", help="Show about information")
+        about_parser.set_defaults(func=self._cmd_about)
+
+        # Update command
+        update_parser = subparsers.add_parser("update", help="Check for updates")
+        update_parser.set_defaults(func=self._cmd_update)
 
         # Config commands
         self._add_config_commands(subparsers)
@@ -300,6 +341,64 @@ class CLI:
             "--to-file", "-o", required=True, help="Output file path"
         )
         export_parser.set_defaults(func=self._cmd_batch_export)
+
+    # About and Update command handlers
+    def _cmd_about(self, _args: argparse.Namespace) -> int:
+        """Handle about command - show detailed info."""
+        from rich.panel import Panel
+        from rich.table import Table
+
+        # Create info table
+        table = Table(show_header=False, box=None, padding=(0, 2))
+        table.add_column("Key", style="cyan")
+        table.add_column("Value")
+
+        table.add_row("Version", f"v{__version__}")
+        table.add_row("Author", __author__)
+        table.add_row("Email", __email__)
+        table.add_row("GitHub", __github__)
+        table.add_row("Telegram", __telegram__)
+        table.add_row("Forum", __forum__)
+
+        panel = Panel(
+            table,
+            title="[bold cyan]Virtualizor Forwarding Tool[/bold cyan]",
+            subtitle="[dim]Domain/Port Forwarding Manager[/dim]",
+            border_style="cyan",
+        )
+        self._tui.console.print(panel)
+
+        # Check for updates
+        latest, _ = check_update_cached()
+        if latest and is_update_available(latest):
+            self._tui.print_info(f"New version available: {latest}")
+            self._tui.console.print(
+                "  Run: [cyan]pip install --upgrade virtualizor-forwarding[/cyan]"
+            )
+        else:
+            self._tui.print_success("You are using the latest version")
+
+        return 0
+
+    def _cmd_update(self, _args: argparse.Namespace) -> int:
+        """Handle update command - check for updates."""
+        self._tui.print_info("Checking for updates...")
+
+        latest = get_latest_version()
+        if not latest:
+            self._tui.print_error("Failed to check for updates. Check your internet connection.")
+            return 1
+
+        if is_update_available(latest):
+            self._tui.print_warning(f"New version available: {latest} (current: {__version__})")
+            self._tui.console.print(
+                "\n  To update, run:\n"
+                "  [cyan]pip install --upgrade virtualizor-forwarding[/cyan]\n"
+            )
+        else:
+            self._tui.print_success(f"You are using the latest version ({__version__})")
+
+        return 0
 
     # Config command handlers
     def _cmd_config_add(self, args: argparse.Namespace) -> int:
