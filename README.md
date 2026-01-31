@@ -115,6 +115,20 @@ vf forward add -i
 
 ## Usage
 
+### Version & Update
+
+```bash
+# Show version
+vf --version
+vf -V
+
+# Show detailed about info
+vf about
+
+# Check for updates
+vf update
+```
+
 ### 1. Configuration
 
 #### Add Host Profile
@@ -349,11 +363,19 @@ Config file is stored at `~/.config/virtualizor-forwarding/config.json`:
 
 | Option | Short | Description |
 |--------|-------|-------------|
+| `--version` | `-V` | Show version and exit |
 | `--host NAME` | `-H` | Use specific host profile |
 | `--no-color` | | Disable colored output |
 | `--verbose` | `-v` | Verbose output |
 | `--debug` | | Debug mode (show stack traces) |
 | `--help` | `-h` | Show help |
+
+### General Commands
+
+| Command | Description |
+|---------|-------------|
+| `vf about` | Show version, author, and contact info |
+| `vf update` | Check for new version from PyPI |
 
 ### Config Commands
 

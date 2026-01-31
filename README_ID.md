@@ -115,6 +115,20 @@ vf forward add -i
 
 ## Penggunaan
 
+### Versi & Update
+
+```bash
+# Tampilkan versi
+vf --version
+vf -V
+
+# Tampilkan info lengkap
+vf about
+
+# Cek update terbaru
+vf update
+```
+
 ### 1. Konfigurasi
 
 #### Tambah Host Profile
@@ -349,11 +363,19 @@ Config file disimpan di `~/.config/virtualizor-forwarding/config.json`:
 
 | Option | Short | Deskripsi |
 |--------|-------|-----------|
+| `--version` | `-V` | Tampilkan versi dan keluar |
 | `--host NAME` | `-H` | Gunakan host profile tertentu |
 | `--no-color` | | Nonaktifkan output berwarna |
 | `--verbose` | `-v` | Output verbose |
 | `--debug` | | Mode debug (tampilkan stack traces) |
 | `--help` | `-h` | Tampilkan bantuan |
+
+### General Commands
+
+| Command | Deskripsi |
+|---------|-----------|
+| `vf about` | Tampilkan versi, author, dan info kontak |
+| `vf update` | Cek versi terbaru dari PyPI |
 
 ### Config Commands
 
