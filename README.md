@@ -5,6 +5,8 @@
   <img src="https://img.shields.io/badge/python-3.8+-blue.svg" alt="Python 3.8+">
   <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT">
   <img src="https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-lightgrey" alt="Platform">
+  <img src="https://img.shields.io/pypi/dw/virtualizor-forwarding" alt="PyPI - Downloads">
+  <a href="https://pepy.tech/projects/virtualizor-forwarding"><img src="https://static.pepy.tech/personalized-badge/virtualizor-forwarding?period=total&units=international_system&left_color=black&right_color=blue&left_text=downloads" alt="PyPI Downloads"></a>
 </p>
 
 <p align="center">
